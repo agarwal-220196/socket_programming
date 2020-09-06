@@ -74,7 +74,7 @@ int main (int argc, char*argv[])
 		bzero(message_receive, MAX_MESSAGE_LENGTH); //refresh the incoming messages to zero
 		
 		//Take message from command line and send it to the server. 
-		fgets(message_send, MAX_MESSAGE_LENGTH, stdin); // (destination, max_lenth, source)
+		fgets(message_send,(int)MAX_MESSAGE_LENGTH, stdin); // (destination, max_lenth, source)
 		write_status = written(socket_descriptor, message_send, strlen(message_send));
 		if (write_status > 0)
 			printf("CLIENT: Message written to the server \n");
@@ -82,7 +82,7 @@ int main (int argc, char*argv[])
 			printf("ERROR: CLIENT: Message not written to the server \n");
 
 		//Receive the message from server and print it to the command line. 
-		read_status = readline (socket_descriptor, message_receive, MAX_MESSAGE_LENGTH);
+		read_status = readline (socket_descriptor, message_receive,(int)MAX_MESSAGE_LENGTH);
 		message_receive[read_status] = '\0';   	//end of string character
 		if (read_status > 0)
 			printf("CLIENT: Message read from the server %s \n", message_receive);
