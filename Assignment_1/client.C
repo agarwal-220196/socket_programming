@@ -31,9 +31,11 @@ int main (int argc, char*argv[])
 	int read_status = 0;
 	int write_status = 0;
 	char *s		//end character pointer. Points to the next character after the numerical value.
-	long string_to_long_int = strtol(argv[2], &p, 10); //(source, next str pointer, base)
+	struct timeval time_stamp_client;
 
 	printf ("Client:  ./echo <IP_address> <port_number> \n");
+
+	long string_to_long_int = strtol(argv[2], &p, 10); //(source, next str pointer, base)
 	
 	if (argc !=3){
 		system_err("Please follow: ./echo <IP_addr> <Port_number> ");
@@ -85,7 +87,12 @@ int main (int argc, char*argv[])
 		read_status = readline (socket_descriptor, message_receive,(int)MAX_MESSAGE_LENGTH);
 		message_receive[read_status] = '\0';   	//end of string character
 		if (read_status > 0)
+		{
 			printf("CLIENT: Message read from the server %s \n", message_receive);
+			ioctl(socket_descriptor, SIOCGSTAMP, &time_stamp_client);
+			printf("CLIENT timestamp: %d.%d \n", time_stamp_client.tv_sec, 
+				time_stamp_client.tv_usec);
+		}
 		else
 			printf("ERROR: CLIENT: Message not read from the server or blank message \n");
 		read_status = 0; // get ready for next read
