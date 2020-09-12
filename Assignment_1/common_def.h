@@ -87,7 +87,7 @@ int efficient_read(int socket_descriptor, char * single_char)
 		efficient_read_checkpoint:
 		   read_count = read (socket_descriptor, efficient_read_buffer , (int)MAX_MESSAGE_LENGTH);
 		if (read_count < 0 )//partial read or other error 
-		{read_count-- ;
+		{	read_count-- ;//to incorporate for the extra read
 			if (errno == EINTR)
 				goto efficient_read_checkpoint;
 			return (-1);		

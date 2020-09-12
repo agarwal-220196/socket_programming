@@ -39,9 +39,11 @@ int main(int argc, char* argv[])
 	port_number = convert_string_to_int;
 
 	int pid;// will be used to identify child and parent process. 
-	
 	struct sockaddr_in clientaddr;
+
+	
 	printf("Server has started\n");
+	
 	socket_fd = socket(AF_INET, SOCK_STREAM,0); // same as client
 	if (socket_fd <0)
 		system_error("ERROR: socket descriptor error");
@@ -91,12 +93,21 @@ int main(int argc, char* argv[])
 				printf("Server: Waiting to hear message\n");
 				read_status = readline(accept_fd, read_message,
 						      (int)MAX_MESSAGE_LENGTH);
-printf("server readstat:%d\n",read_status);
+			
 				if(read_status > 0)
 				{	
 					printf("Server: Read from client %s\n", read_message);
 					local_time = time(NULL);	
 					printf("time of day:%s\n",asctime(localtime(&local_time)));
+				}
+				else if (read_status ==0)
+				{
+					printf("EOF for client \n");
+					close(accept_fd);
+					local_time = time(NULL);	
+					printf("closed at:%s\n",asctime(localtime(&local_time)));
+					printf("listening to others\n");
+					return 1;
 				}	
 
 				printf("Server:Echoing back to client\n");
