@@ -74,7 +74,8 @@ int readline (int socket_descriptor, char * buffer, int max_message_length)
 			return (-1);
 
 	}
-	
+	bzero (efficient_read_buffer , (int) MAX_MESSAGE_LENGTH);
+	read_count =0; 
 	return (i+1); // including the null character that will be added.  
 }
 
@@ -84,17 +85,15 @@ int efficient_read(int socket_descriptor, char * single_char)
 	if (read_count<=0)//first time read
 	{	
 		efficient_read_checkpoint:
-		    read_count = read (socket_descriptor, efficient_read_buffer , (int)MAX_MESSAGE_LENGTH);
-		    
+		   read_count = read (socket_descriptor, efficient_read_buffer , (int)MAX_MESSAGE_LENGTH);
 		if (read_count < 0 )//partial read or other error 
-		{
+		{read_count-- ;
 			if (errno == EINTR)
 				goto efficient_read_checkpoint;
 			return (-1);		
 		}
 		else if (read_count==0)
 			return (0);
-	
 		efficient_read_ptr = efficient_read_buffer ; //assiging to the first character. 
 	}
 
