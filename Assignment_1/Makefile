@@ -6,18 +6,21 @@
 
 
 #for compiling server.c
+sample : echos.o echo.o
 
-server: server.c
-	gcc -I . server.c -o echos
+
+echos.o: server.c common_def.h 
+	cc -c server.c -o echos.o
 
 #for compiling client.c 
 
-client: client.c
-	gcc -I . client.c -o echo
+echo.o: client.c common_def.h
+	cc -c client.c -o echo.o
 
 #clean to discard previous .o files 
 clean:
-	$(RM) *.o
+# 	$(RM) *.o
+	rm -f sample *.o core
 
 
 
