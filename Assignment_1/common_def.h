@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_MESSAGE_LENGTH 120
+#define MAX_MESSAGE_LENGTH 120;
 
 static char efficient_read_buffer [MAX_MESSAGE_LENGTH];
 static char *efficient_read_ptr;
@@ -55,27 +55,26 @@ int readline (int socket_descriptor, char * buffer, int max_message_length)
 	character or any other error. 
 	*/
 
-	for (i=0; i<(max_message_length -1); i++)
+	for (i=0, i<(max_message_length -1), i++)
 	{
 		eff_read_return = efficient_read(socket_descriptor, &single_char);
 	
 		if (eff_read_return == 1)
 		{
-			*buffer++ = single_char;
+			*buff++ = single_char;
 			if (single_char == '\n')
-				break; // break the for loop at a new line character
+				break // break the for loop at a new line character
 		}
 		else if (eff_read_return == 0)
 		{
-			*buffer = 0; //End Of File as described in the handout 
-			return (i);
+			*buff = 0; //End Of File as described in the handout 
+			return (i)
 		}	
 		else 
 			return (-1);
 
 	}
-	bzero (efficient_read_buffer , (int) MAX_MESSAGE_LENGTH);
-	read_count =0; 
+	
 	return (i+1); // including the null character that will be added.  
 }
 
@@ -85,15 +84,17 @@ int efficient_read(int socket_descriptor, char * single_char)
 	if (read_count<=0)//first time read
 	{	
 		efficient_read_checkpoint:
-		   read_count = read (socket_descriptor, efficient_read_buffer , (int)MAX_MESSAGE_LENGTH);
+		    read_count = read (socket_descriptor,efficient_read_buffer, (int)MAX_MESSAGE_LENGTH);
+		    
 		if (read_count < 0 )//partial read or other error 
-		{	read_count-- ;//to incorporate for the extra read
+		{
 			if (errno == EINTR)
 				goto efficient_read_checkpoint;
 			return (-1);		
 		}
 		else if (read_count==0)
 			return (0);
+	
 		efficient_read_ptr = efficient_read_buffer ; //assiging to the first character. 
 	}
 

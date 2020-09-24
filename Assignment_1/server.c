@@ -15,8 +15,7 @@
 #include <netdb.h>
 #include <errno.h>
 #include <unistd.h>
-#include <time.h>
-#include "common_def.h"
+#include <common_def.h>
 
 int main(int argc, char* argv[])
 {
@@ -26,9 +25,9 @@ int main(int argc, char* argv[])
 	int port_number;
 	char *pointer_after_number;
 	int read_status, write_status;
-	time_t local_time;
+	struct timeval time_stamp_server;
 
-//	printf("Server:./echos <port number>\n");
+	printf("Server:./echos <port number>\n");
 
 	long convert_string_to_int = strtol (argv[1], &pointer_after_number,10);	//Same as client.C
 
@@ -39,11 +38,9 @@ int main(int argc, char* argv[])
 	port_number = convert_string_to_int;
 
 	int pid;// will be used to identify child and parent process. 
-	struct sockaddr_in clientaddr;
+	
+	struct sockaddr clientaddr;
 
-	
-	printf("Server has started\n");
-	
 	socket_fd = socket(AF_INET, SOCK_STREAM,0); // same as client
 	if (socket_fd <0)
 		system_error("ERROR: socket descriptor error");
@@ -78,45 +75,32 @@ int main(int argc, char* argv[])
 		pid = fork();
 		
 		if (pid > 0)// this is a parent 
-		{
 			printf("Server: Parent process with %d pid\n", pid);
-			//if SIGCHILD close the connection and continue 
-			
-		}
+
 		else if (pid ==0) // this a child 
 		{
 			while (1) // continue listening 
 			{
 				printf("Server:this is a child process \n");
 				bzero(read_message ,(int) MAX_MESSAGE_LENGTH);
-				
-				printf("Server: Waiting to hear message\n");
+
+				printf("Server: Reading Message\n");
 				read_status = readline(accept_fd, read_message,
 						      (int)MAX_MESSAGE_LENGTH);
-			
 				if(read_status > 0)
 				{	
-					printf("Server: Read from client %s\n", read_message);
-					local_time = time(NULL);	
-					printf("time of day:%s\n",asctime(localtime(&local_time)));
-				}
-				else if (read_status ==0)
-				{
-					printf("EOF for client \n");
-					close(accept_fd);
-					local_time = time(NULL);	
-					printf("closed at:%s\n",asctime(localtime(&local_time)));
-					printf("listening to others\n");
-					return 1;
+					printf("Server: Read from client\n");
+					ioctl(accept_fd, SIOCGSTAMP, &time_stamp_server);
+					printf("time of day: %d.%d", time_stamp_server.tv_sec, 
+						time_stamp_server.tv_usec);
 				}	
 
 				printf("Server:Echoing back to client\n");
 				write_status = written(accept_fd, read_message,
-						      strlen(read_message));
-		
+						      strlen(read_message)+1);
 				if(write_status > 0)
 					printf("Server:Written back to client\n");
-
+	
 			}
 		}
 		else 
@@ -127,7 +111,6 @@ int main(int argc, char* argv[])
 	
 	}
 
-	
 }
 
 

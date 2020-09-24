@@ -18,7 +18,7 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include "common_def.h"
-#include <time.h>
+
 
 int main (int argc, char*argv[])
 //argc specifies the number of command line inputs and argv stores the input in array starting from 1
@@ -30,44 +30,43 @@ int main (int argc, char*argv[])
 	int port_number;
 	int read_status = 0;
 	int write_status = 0;
-	char *s;	//end character pointer. Points to the next character after the numerical value.
-	struct sockaddr_in server_address;
-	time_t local_time;
-//	printf ("Client:  ./echo <IP_address> <port_number> \n");
+	char *s		//end character pointer. Points to the next character after the numerical value.
+	struct timeval time_stamp_client;
 
-	long string_to_long_int = strtol(argv[2], &s, 10); //(source, next str pointer, base)
+	printf ("Client:  ./echo <IP_address> <port_number> \n");
+
+	long string_to_long_int = strtol(argv[2], &p, 10); //(source, next str pointer, base)
 	
 	if (argc !=3){
-		system_error("Please follow: ./echo <IP_addr> <Port_number> ");
+		system_err("Please follow: ./echo <IP_addr> <Port_number> ");
 		return 0;
 	} 
 
 	port_number = string_to_long_int;
-	printf ("The port number is %d \n" , port_number);	
+	printf ("The port number is %d" &port_number);	
 
-//	struct sockaddr_in server_address;
+	struct sockaddr_in server_address;
+	socket_descriptor = socket(AF_INET, SOCK_STREAM,0) //(IPv4, TCP, IP)
 
-	socket_descriptor = socket(AF_INET, SOCK_STREAM,0); //(IPv4, TCP, IP)
-	if (socket_descriptor<0)
-		system_error("Error: Socket descripter error");
+	if (socket_descriptor < 0)
+		system_err("Error: Socket descripter error");
 
-	bzero(&server_address, sizeof(server_address));	//clear the contents of the server_address.
-//	printf ("the message is listening to u \n");
+	bzero(&server_address, sizeof(server_address))	//clear the contents of the server_address.
 
 	server_address.sin_family = AF_INET;//IPv4 family 
 	server_address.sin_port	  = htons(port_number);//making sure it is in big endinan
 
 	//converts the string number into a network address structure in the af adress family. 
 	string_2_network_addr = inet_pton(AF_INET, argv[1], &(server_address.sin_addr));
-	if (string_2_network_addr<=0)
-		system_error("network IP address is not correct");
-        
-//       printf ("the message is listening to u \n");
+	if (string_2_network_addr)
+		system_err("network IP address in not correct");
+
 	connect_desc = connect(socket_descriptor,(struct sockaddr *)&server_address, 
 			       sizeof(server_address) );
 
 	if (connect_desc < 0)
-		system_error("Error in connecting");
+		system_err("Error in connecting");
+
 
 //Now the connection is established and we can started sending the message in a continuous loop
 
@@ -75,36 +74,24 @@ int main (int argc, char*argv[])
 	{
 		bzero(message_send, MAX_MESSAGE_LENGTH);//refresh it to zero 
 		bzero(message_receive, MAX_MESSAGE_LENGTH); //refresh the incoming messages to zero
-		//Take message from command line and send it to the server. 
-		if((fgets(message_send,(int)MAX_MESSAGE_LENGTH, stdin)) ==NULL || feof(stdin)) // (destination, max_lenth, source)
-		{
-			printf("EOF found, contrl +d\n");
-			close(socket_descriptor);
-			local_time = time (NULL);	
-			printf("CLIENT child closed at timestamp:%s \n",asctime(localtime(&local_time)));
-			return 1;
-		}
 		
-		printf ("the message written to server is %s \n",message_send);
+		//Take message from command line and send it to the server. 
+		fgets(message_send,(int)MAX_MESSAGE_LENGTH, stdin); // (destination, max_lenth, source)
 		write_status = written(socket_descriptor, message_send, strlen(message_send));
 		if (write_status > 0)
 			printf("CLIENT: Message written to the server \n");
-		else
-		{ 
+		else 
 			printf("ERROR: CLIENT: Message not written to the server \n");
-			continue;
-		}
-		
 
 		//Receive the message from server and print it to the command line. 
-		read_status = readline(socket_descriptor, message_receive,(int)MAX_MESSAGE_LENGTH);
+		read_status = readline (socket_descriptor, message_receive,(int)MAX_MESSAGE_LENGTH);
 		message_receive[read_status] = '\0';   	//end of string character
 		if (read_status > 0)
 		{
 			printf("CLIENT: Message read from the server %s \n", message_receive);
-			local_time = time (NULL);
-			
-			printf("CLIENT timestamp:%s \n",asctime(localtime(&local_time)));
+			ioctl(socket_descriptor, SIOCGSTAMP, &time_stamp_client);
+			printf("CLIENT timestamp: %d.%d \n", time_stamp_client.tv_sec, 
+				time_stamp_client.tv_usec);
 		}
 		else
 			printf("ERROR: CLIENT: Message not read from the server or blank message \n");
