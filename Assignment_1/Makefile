@@ -9,13 +9,13 @@
 sample : echos.o echo.o
 
 echos.o: server.c common_def.h
-gcc -I . server.c -o echos
+	gcc -I . server.c -o echos
 
 #for compiling client.c
 
 echo.o: client.c common_def.h
-gcc -I . client.c -o echo
+	gcc -I . client.c -o echo
 
 #clean to discard previous .o files
 clean:
-$(RM) echo*
+	$(RM) echo*
