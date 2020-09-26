@@ -24,7 +24,7 @@ struct simple_broadcast_chat_server_attribute{
 struct simple_broadcast_chat_server_message{
 
 	struct simple_broadcast_chat_server_header header;
-	struct simple_broadcast_chat_server_attribute attribute[2];// to identify the two different msgs.
+	struct simple_broadcast_chat_server_attribute attribute[2];// to identify the two different msgs. i.e. the actual payload message and the username.
 };
 
 
