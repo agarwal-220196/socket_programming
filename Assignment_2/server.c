@@ -97,6 +97,7 @@ int client_join_check(int fd_client){
 	}
 	else{
 		strcpy(clients[number_of_clients].username, temp_string);
+        printf("number_of_clients = %d\n",number_of_clients);
 		clients[number_of_clients].file_descriptor = fd_client;
 		clients[number_of_clients].client_count = number_of_clients;
 		number_of_clients ++;
@@ -112,14 +113,18 @@ int main(int argc, char*argv[])
 	struct simple_broadcast_chat_server_message receive_message, forward_message, join_broadcast_message, leave_broadcast_message;
 	struct simple_broadcast_chat_server_attribute client_attribute;
 
+    printf("Here it is\n");
 	//Server's address information
 	struct sockaddr_in server_address, *clients_address;
-    // server_addr.sin_family = AF_INET;
-    // server_addr.sin_addr.s_addr = inet_addr(argv[1]);
-    // server_addr.sin_port = htons(atoi(argv[2]));
-    // socklen_t server_addr_size = sizeof(server_addr);
+    server_address.sin_family = AF_INET;
+    printf("First chec\n");
+    // server_address.sin_addr.s_addr = inet_addr(INADDR_ANY);
+    printf("Second checpoint \n");
+    server_address.sin_port = htons(atoi(argv[1]));
+    socklen_t server_addr_size = sizeof(server_address);
 
-    int maximum_number_of_clients = atoi(argv[3]);
+    int maximum_number_of_clients = atoi(argv[2]);
+    printf("Maximum number%d\n", maximum_number_of_clients);
 
     int server_status;
     struct addrinfo addr_hints;
@@ -129,10 +134,10 @@ int main(int argc, char*argv[])
     addr_hints.ai_family = AF_UNSPEC; //don;t care IPv4 OR IPv6
     addr_hints.ai_socktype = SOCK_STREAM; //TCP sockets
 
-    if((server_status = getaddrinfo(argv[1],argv[2],&addr_hints, &server_info))!=0){
-    	fprintf(stderr, "ERROR: getaddrinfo : %s\n",gai_strerror(server_status) );
-    	exit(1);
-    }
+    // if((server_status = getaddrinfo(argv[1],&addr_hints, &server_info))!=0){
+    // 	fprintf(stderr, "ERROR: getaddrinfo : %s\n",gai_strerror(server_status) );
+    // 	exit(1);
+    // }
 
     fd_set fd_master; //main master set of file descriptor
     fd_set temp_fd; //temporary file decriptor list
@@ -141,14 +146,21 @@ int main(int argc, char*argv[])
 
     int client_new = 0; //count for newly accepted socket descriptor
     struct sockaddr_in addr_client; //client's address
+    // addr_client.sin_addr.s_addr = htons(INADDR_ANY);
+    addr_client.sin_family = AF_INET;
+    /* we don't want to bind the server socket to a specific IP.
+    Basically during bind, we want to accept connections to all IPs*/
+    addr_client.sin_addr.s_addr = htons(INADDR_ANY);
+    addr_client.sin_port = htons (atoi(argv[1]));
     int number_of_bytes = 0; //number of bytes received
-
+    printf("Third checpoint\n");
     //socket initialization
-    int socket_server = socket((*server_info).ai_family,(*server_info).ai_socktype,(*server_info).ai_protocol);
-
+    // int socket_server = socket((*server_info).ai_family,(*server_info).ai_socktype,(*server_info).ai_protocol);
+    int socket_server = socket(AF_INET, SOCK_STREAM,0);
+    printf("Socket server value %d\n",socket_server );
     if(socket_server < 0){
     	printf("%s\n","Failed to establish connection between client and server" );
-    	perror("Trying to establish");
+    	system_error("Trying to establish");
     	exit (0);
     }
 
@@ -161,21 +173,23 @@ int main(int argc, char*argv[])
     printf("Rstablished socket for server");
 
     //binding
-    if(bind(socket_server,(*server_info).ai_addr, (*server_info).ai_addrlen) < 0){
+    // if(bind(socket_server,(*server_info).ai_addr, (*server_info).ai_addrlen) < 0){
+    if (bind(socket_server, (struct sockaddr *) &addr_client ,sizeof(addr_client)) < 0)
+    {
     	printf("Failed in socket binding");
-    	perror("BINDING");
+    	system_error("BINDING");
     	exit(0);
     }
 
-    printf("%s\n","Success: Socket Binded" );
+    printf("%s\n","Success: Socket Binded\n" );
 
     clients = (struct simple_broadcast_chat_server_client_user_information *)malloc(maximum_number_of_clients*sizeof(struct simple_broadcast_chat_server_client_user_information));
     clients_address = (struct sockaddr_in *)malloc(maximum_number_of_clients*sizeof(struct sockaddr_in));
 
     //listening phase
     if(listen (socket_server,10) < 0) {
-    	printf("Fail: To client found");
-    	perror("LISTEN");
+    	printf("Fail: To client found\n");
+    	system_error("LISTEN");
     	exit(0);
     }
     printf("%s\n","Listening to the client!" );
@@ -184,23 +198,25 @@ int main(int argc, char*argv[])
     FD_SET(socket_server, &fd_master); //add server socket to master set
     //keeping count of the file descriptors
     int max_fd = socket_server; //number of file descriptors should be highest file +1 
+    printf("Max FD= %d\n",max_fd);
     int temp;
 
     while(1){
     	temp_fd = fd_master;
     	if (select(max_fd + 1,&temp_fd, NULL, NULL,NULL) == -1){
     		printf("%s\n","Error occured when selecting \n" );
-    		perror("SELECT:");
+    		system_error("SELECT:");
     		exit(0);
     	}
     	int i;
     	for ( i=0; i<=max_fd; i++){ //looping through the file descriptors
+            // printf("Max FD = %d\n",max_fd);
     		if(FD_ISSET(i,&temp_fd)){ //taking one from existing file descriptors
     			if(i == socket_server){ //if this is server soket , then check for clients that wants to connect or send any message
     				//Accept and the address of the new client in the array
     				socklen_t size_client_address = sizeof(clients_address[number_of_clients]);
     				client_new = accept(socket_server, (struct sockaddr *)&clients_address[number_of_clients], &size_client_address );
-
+                    // client_new = accept(socket_server,(struct sockaddr*)NULL, NULL);
     				if(client_new == -1){
     					printf("ERROR : Occured when accepting new client \n Error Number%d\n",(int)errno );
     				}else{
@@ -233,7 +249,7 @@ int main(int argc, char*argv[])
     								{
     									if(j != socket_server && j != client_new){
     										if((write(j,(void *)&join_broadcast_message,sizeof(join_broadcast_message))) == -1){
-    											perror("Error while broadcasting JOIN message");
+    											system_error("Error while broadcasting JOIN message");
     										}
     									}
     								}
@@ -248,7 +264,7 @@ int main(int argc, char*argv[])
     			}else{
     					//data from existing connection
     					number_of_bytes = read(i, (struct simple_broadcast_chat_server_message *)&receive_message,sizeof(receive_message));
-
+                        // printf("Number of Bytes = %d\n",number_of_bytes );
     					if(number_of_bytes <= 0){
     						if(number_of_bytes == 0){
     							int k;
@@ -266,14 +282,15 @@ int main(int argc, char*argv[])
     								if(FD_ISSET(j,&fd_master)){
     									if(j!=socket_server && j!=client_new){
     										if((write(j,(void*)&leave_broadcast_message,sizeof(leave_broadcast_message))) == -1){
-    											perror("BROADCASTING LEAVE MESSAGE");
+    											system_error("BROADCASTING LEAVE MESSAGE");
     										}
     									}
     								}
     							}
-    		
+    		                      printf("Fourth checkpoint\n");
     					}else if(number_of_bytes < 0){
-    						perror("RECEIVING MESSAGE, WAITING");
+    						// system_error("RECEIVING MESSAGE, WAITING");
+                            printf("RECEIVING MESSAGE, WAITING\n");
     					}
     					close(i);
     					FD_CLR(i, &fd_master); //client is removed from the master set of connected clients
@@ -309,15 +326,16 @@ int main(int argc, char*argv[])
     						if(FD_ISSET(j , &fd_master)){
     							if(j!=socket_server && j!=i){
     								//CHECK: I guess the condition should be false
-    								if((write(j, (void*)&forward_message,number_of_bytes))){
-    									perror("Forwarding message");
+    								if((write(j, (void*)&forward_message,number_of_bytes))==-1){
+    									system_error("Forwarding message");
     								}
     							}
     						}
     					}
     				}//End forward message
     		}//End dealing with data from client
-    	}//end new connection
+    	}else{
+            printf("Garbage\n");}//end new connection
     }//end loop through file descriptors
 } //while loop end
 
