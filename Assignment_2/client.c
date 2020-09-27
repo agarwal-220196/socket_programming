@@ -25,7 +25,7 @@
 
 //connection is made, time to join the chat room
 
-void join_chat (int socket_descriptor, char * arg[]){
+void join_chat (int socket_descriptor, char * argv[]){
 
 	struct simple_broadcast_chat_server_header header;
 	struct simple_broadcast_chat_server_attribute attribute;
@@ -37,8 +37,8 @@ void join_chat (int socket_descriptor, char * arg[]){
 	header.type    = '2'; //join request header
 
 	attribute.type = 2;//sending the username 
-	attribute.length = strlen(arg[3]) + 1; //length of username + null char
-	strcpy(attribute.payload_data, arg[3]); // copy the username 
+	attribute.length = strlen(argv[3]) + 1; //length of username + null char
+	strcpy(attribute.payload_data, argv[3]); // copy the username 
 	
 	message.header = header; //encapsulate
 	message.attribute[0] = attribute;// just one attribute for joining.
@@ -200,17 +200,17 @@ int main (int argc, char*argv[]){
 		printf("CLIENT:USAGE:./client <IP_address> <port_number> <user_name> \n");
 		system_error("Please specify the right arguments as above");
 	}
-	
+
 	int socket_descriptor = socket(AF_INET, SOCK_STREAM, 0); // same as MP1
-
+	char * p; // used to point to an array if not converted,Same as MP1
 	//server add. 
-
+	int port_number = strtol(argv[2],&p,10);
 	struct hostent* IP =  gethostbyname(argv[1]);//IP address
 	struct sockaddr_in server_address;
 	bzero(&server_address, sizeof(server_address)); // same as MP 1
 	server_address.sin_family = AF_INET; //IPv4
-	server_address.sin_port   = htons(atoi(argv[2])); // port number as MP1
-	memcpy(&server_address.sin_addr.s_addr, IP->h_addr, IP->h_length);
+	server_address.sin_port   = htons(port_number); // port number as MP1
+	//memcpy(&server_address.sin_addr.s_addr, IP->h_addr, IP->h_length);
 
 
 	//adding file descriptor to the select. 
@@ -223,10 +223,10 @@ int main (int argc, char*argv[]){
 
 	//connec to the server/or we can say the chatroom. 
 	int connect_status = connect(socket_descriptor, (struct sockaddr *)&server_address, sizeof(server_address));
-
+printf("hi exit if %d \n",connect_status );
 	if (connect_status < 0)//error
 		system_error("Error connecting to the server");
-
+	
 	printf("Connection made, trying to join");
 
 	join_chat(socket_descriptor, argv);
