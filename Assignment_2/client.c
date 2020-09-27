@@ -17,11 +17,12 @@
 #include <errno.h>
 #include <unistd.h>
 #include <netinet/in.h>
+#include <time.h>
 
 
 //Simple Broadcast Chat server structures. 
 #include "common_def.h"
-
+time_t local_time;
 
 //connection is made, time to join the chat room
 
@@ -87,8 +88,11 @@ int read_server_message(int socket_descriptor){
 
 			if(size_of_payload==server_message.attribute[0].length){
 				
-				printf("The user %s says %s \n",server_message.attribute[1].payload_data,
+				printf("The user %s says %s",server_message.attribute[1].payload_data,
 					server_message.attribute[0].payload_data);
+				local_time = time (NULL);
+			
+				printf("CLIENT timestamp:%s \n",asctime(localtime(&local_time)));
 
 			}
 
@@ -170,7 +174,7 @@ void send_to_server(int socket_descriptor)
 	select(STDIN_FILENO+1, &read_file_descriptor, NULL, NULL, &wait_time_to_send);
 
 	if(FD_ISSET(STDIN_FILENO, &read_file_descriptor)){
-		number_of_bytes_read_from_user = read(STDIN_FILENO, temp_message_holder, sizeof(temp_message_holder));
+		number_of_bytes_read_from_user = read(STDIN_FILENO,temp_message_holder, sizeof(temp_message_holder));
 
 		if (number_of_bytes_read_from_user >0)
 			temp_message_holder[number_of_bytes_read_from_user] = '\0';
@@ -195,13 +199,16 @@ void send_to_server(int socket_descriptor)
 
 int main (int argc, char*argv[]){
 
+	//int idle_count = 0;
+	struct timeval idle_count;
+	int select_return_value =0;
 	if (argc!=4)
 	{
 		printf("CLIENT:USAGE:./client <IP_address> <port_number> <user_name> \n");
 		system_error("Please specify the right arguments as above");
 	}
 
-	int socket_descriptor = socket(AF_INET, SOCK_STREAM, 0); // same as MP1
+	int socket_descriptor = socket(AF_INET, SOCK_STREAM, 0); // Wwould work for both IPv4 AND IPv6
 	char * p; // used to point to an array if not converted,Same as MP1
 	//server add. 
 	int port_number = strtol(argv[2],&p,10);
@@ -239,7 +246,9 @@ printf("hi exit if %d \n",connect_status );
 
 	read_file_descriptor = main_file_descriptor;
 
-	if (select(socket_descriptor+1, &read_file_descriptor,NULL,NULL,NULL)==-1)
+	idle_count.tv_sec =10;// waitin for 10 secs or the readfiledescriptor to wakeup 
+
+	if ((select_return_value = select(socket_descriptor+1, &read_file_descriptor,NULL,NULL,&idle_count))==-1)
 		system_error("CLIENT:SELECT error");
 
 	if (FD_ISSET(socket_descriptor,&read_file_descriptor))//read from the socket
