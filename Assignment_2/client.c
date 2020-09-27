@@ -7,9 +7,7 @@
 
 #include <string.h>
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
-#include <sstream.h>
 #include <sys/time.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -50,9 +48,149 @@ void join_chat (int socket_descriptor, char * arg[]){
 	join_status = read_server_message(socket_descriptor);
 
 	if (join_status==1)
-		system_error("username already present.");
+		{system_error("username already present.");
+		 close(socket_descriptor);}
 
 }	
+
+//read server message
+
+int read_server_message(int socket_descriptor){
+
+	struct simple_broadcast_chat_server_message server_message;
+	int i;
+	int return_status = 0;
+	int number_of_bytes = 0;
+
+// reading the bytes from the server. 
+	number_of_bytes = read(socket_descriptor,(struct simple_broadcast_chat_server_message*)& server_message, sizeof(server_message));
+
+	int size_of_payload = 0;//will be used to check the size of the payload received. 
+	
+	// forward_message
+
+	//check the username, compare the actual length with the length specified in the header, check the header type with the attribute index. If all are correct print the message. 
+
+	if (server_message.header.type==3){// forward message
+	
+		if((server_message.attribute[0].payload_data!=NULL||server_message.attribute[0].payload_data!='\0')
+		 &&(server_message.attribute[1].payload_data!=NULL||server_message.attribute[1].payload_data!='\0')
+		 &&(server_message.attribute[0].type==4)
+		 &&(server_message.attribute[1].type==2)){
+		//checking the size of the payload matches the payload length specified. 
+			for(i=0; i<sizeof(server_message.attribute[0].payload_data);i++){
+				if (server_message.attribute[0].payload_data[i]=='\0'){//end of string found 
+					size_of_payload = i-1;
+					break;
+				}
+			}//end for 
+
+			if(size_of_payload==server_message.attribute[0].length){
+				
+				printf("The user %s says %s \n",server_message.attribute[1].payload_data,
+					server_message.attribute[0].payload_data);
+
+			}
+
+			else system_error("length of payload mismatch at client \n");
+		}//mismatch of the any data such as payload data type or username data type 
+		else system_error("CLIENT: header type mismatch or null recevied\n");
+
+		return_status = 0; //sucess/
+	}//if (server_message.header.type)
+
+
+	//if the server sends a NACK
+	if(server_message.header.type ==5){
+		if((server_message.attribute[0].payload_data!=NULL||server_message.attribute[0].payload_data!='\0')
+		 &&(server_message.attribute[0].type==1)){// indicating the reason of failure
+			printf("Client: failure to join, reason %s",server_message.attribute[0].payload_data);
+		}
+		return_status = 1;		
+	}// if (server_message.header.type)
+
+//offline message received from the server. 
+	if (server_message.header.type==6){
+		
+		if ((server_message.attribute[0].payload_data!=NULL||server_message.attribute[0].payload_data!='\0')
+		   &&server_message.attribute[0].type ==2){ //i.e.sending the username that left the chat 
+		
+			printf("%s user left the chat room\n",server_message.attribute[0].payload_data);
+		}
+	return_status =0;//successfully read. 
+	}
+
+//ACK with the client count 
+	if (server_message.header.type==7){
+		if ((server_message.attribute[0].payload_data!=NULL||server_message.attribute[0].payload_data!='\0')		     &&server_message.attribute[0].type ==4){
+		   printf("The number of client and ACK msg is %s\n",server_message.attribute[0].payload_data);
+		}
+	return_status =0;
+	}
+
+//new chat participant has arrived. 
+	if (server_message.header.type ==8){
+		if ((server_message.attribute[0].payload_data!=NULL||server_message.attribute[0].payload_data!='\0')
+		   &&server_message.attribute[0].type ==2){ //i.e.sending the username that joinded
+			printf("New %s user joined \n",server_message.attribute[0].payload_data);
+		}
+
+	return_status = 0; 
+	}
+
+
+	return return_status;
+}
+
+
+
+void send_to_server(int socket_descriptor)
+{
+	struct simple_broadcast_chat_server_header header;
+	header.version = '3';
+	header.type    = '4';//as defined in the manual.
+
+	struct simple_broadcast_chat_server_message message;
+	struct simple_broadcast_chat_server_attribute attribute;
+
+
+	message.header = header;// copying the header to the message header.
+
+	int number_of_bytes_read_from_user = 0;
+	char temp_message_holder[512];
+	struct timeval wait_time_to_send;
+	fd_set read_file_descriptor;
+
+	wait_time_to_send.tv_sec = 2;
+	wait_time_to_send.tv_usec = 0;
+
+	FD_ZERO(&read_file_descriptor); //clearing the read descriptor
+	FD_SET(STDIN_FILENO, &read_file_descriptor);// set to read from the input 
+
+	select(STDIN_FILENO+1, &read_file_descriptor, NULL, NULL, &wait_time_to_send);
+
+	if(FD_ISSET(STDIN_FILENO, &read_file_descriptor)){
+		number_of_bytes_read_from_user = read(STDIN_FILENO, temp_message_holder, sizeof(temp_message_holder));
+
+		if (number_of_bytes_read_from_user >0)
+			temp_message_holder[number_of_bytes_read_from_user] = '\0';
+	
+	
+	attribute.type = 4;//message as specified in the mannual 
+	strcpy(attribute.payload_data, temp_message_holder);// copy the message to payload
+	message.attribute[0] = attribute;
+	message.attribute[0].length = number_of_bytes_read_from_user -1 ; //excluding the extra read char
+	write(socket_descriptor, (void *)&message, sizeof(message));
+
+	}
+	else {
+
+		printf("CLIENT:Timeout occrued \n");
+	}
+}
+
+
+
  
 
 int main (int argc, char*argv[]){
@@ -63,11 +201,11 @@ int main (int argc, char*argv[]){
 		system_error("Please specify the right arguments as above");
 	}
 	
-	int socket_descriptor = socket(AF_INET, SOCK_STREAM, 0) // same as MP1
+	int socket_descriptor = socket(AF_INET, SOCK_STREAM, 0); // same as MP1
 
 	//server add. 
 
-	struct hostent* IP =  gethostbyname(arg[1]);//IP address
+	struct hostent* IP =  gethostbyname(argv[1]);//IP address
 	struct sockaddr_in server_address;
 	bzero(&server_address, sizeof(server_address)); // same as MP 1
 	server_address.sin_family = AF_INET; //IPv4
@@ -93,13 +231,28 @@ int main (int argc, char*argv[]){
 
 	join_chat(socket_descriptor, argv);
 
+	FD_SET(socket_descriptor, &main_file_descriptor);// to see any input on the socket line 
+	FD_SET(STDIN_FILENO, &main_file_descriptor);// to see any input on the command line 
 
+
+	while (1){
+
+	read_file_descriptor = main_file_descriptor;
+
+	if (select(socket_descriptor+1, &read_file_descriptor,NULL,NULL,NULL)==-1)
+		system_error("CLIENT:SELECT error");
+
+	if (FD_ISSET(socket_descriptor,&read_file_descriptor))//read from the socket
+		read_server_message(socket_descriptor);
+
+	if (FD_ISSET(STDIN_FILENO, &read_file_descriptor))//read from commadn line send to the server
+		send_to_server(socket_descriptor);
+	}
 
 	
 
-
-
-
-
+	printf("The user left, end of chat\n");
+	printf("Closing client");
+	return 0;
 
 }
