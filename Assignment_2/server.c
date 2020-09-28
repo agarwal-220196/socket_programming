@@ -264,7 +264,7 @@ int main(int argc, char*argv[])
     			}else{
     					//data from existing connection
     					number_of_bytes = read(i, (struct simple_broadcast_chat_server_message *)&receive_message,sizeof(receive_message));
-                        // printf("Number of Bytes = %d\n",number_of_bytes );
+                        printf("Number of Bytes = %d\n",number_of_bytes );
     					if(number_of_bytes <= 0){
     						if(number_of_bytes == 0){
     							int k;
@@ -334,8 +334,8 @@ int main(int argc, char*argv[])
     					}
     				}//End forward message
     		}//End dealing with data from client
-    	}else{
-            printf("Garbage\n");}//end new connection
+    	}//else{
+//            printf("Garbage\n");}//end new connection
     }//end loop through file descriptors
 } //while loop end
 

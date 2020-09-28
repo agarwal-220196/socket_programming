@@ -142,7 +142,18 @@ int read_server_message(int socket_descriptor){
 	return_status = 0; 
 	}
 
+	if (server_message.header.type ==9)
+	{
+		if ((server_message.attribute[0].payload_data!=NULL||server_message.attribute[0].payload_data!='\0')
+		   &&server_message.attribute[0].type ==2){ //i.e.sending the username that joinded
+			printf("%s user is IDLE \n",server_message.attribute[0].payload_data);
+		}
 
+	return_status = 0; 
+	}
+
+
+ 
 	return return_status;
 }
 
@@ -167,8 +178,10 @@ void send_to_server(int socket_descriptor, bool timeout)
 	fd_set read_file_descriptor;
 	if (timeout == true)
 	{
+		header.version = '9';
 		attribute.type =4;//idle message 
-		char idle_array[]  = "I am IDLE please talk to me.";
+		char idle_array[29]  = "I am IDLE please talk to me.";
+		idle_array[29] = '\0';
 		strcpy(attribute.payload_data, idle_array);
 		message.attribute[0] = attribute;
 		message.attribute[0].length = 28; // the length of the string above. 
@@ -248,7 +261,7 @@ int main (int argc, char*argv[]){
 // get the inforamtion about the address being ipv4 or ipv6
 	return_value_address_resolution = getaddrinfo(IPaddress, NULL, &check, &get_addr_info);
 
-	if (return_value_address_resolution==0)
+	if (return_value_address_resolution)
 	{
 		system_error ("invalid address");
 	}
