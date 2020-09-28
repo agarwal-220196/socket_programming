@@ -280,7 +280,7 @@ int main (int argc, char*argv[]){
 	if (connect_status < 0)//error
 		system_error("Error connecting to the server");
 	
-	printf("Connection made, trying to join");
+	printf("Connection made, trying to join\n");
 	}
 
 	else if(get_addr_info->ai_family == AF_INET6)

@@ -113,13 +113,13 @@ int main(int argc, char*argv[])
 	struct simple_broadcast_chat_server_message receive_message, forward_message, join_broadcast_message, leave_broadcast_message,idle_message;
 	struct simple_broadcast_chat_server_attribute client_attribute;
 
-    printf("Here it is\n");
+    // printf("Here it is\n");
 	//Server's address information
 	struct sockaddr_in server_address, *clients_address;
     server_address.sin_family = AF_INET;
-    printf("First chec\n");
+    // printf("First chec\n");
     // server_address.sin_addr.s_addr = inet_addr(INADDR_ANY);
-    printf("Second checpoint \n");
+    // printf("Second checpoint \n");
     server_address.sin_port = htons(atoi(argv[1]));
     socklen_t server_addr_size = sizeof(server_address);
 
@@ -153,7 +153,7 @@ int main(int argc, char*argv[])
     addr_client.sin_addr.s_addr = htons(INADDR_ANY);
     addr_client.sin_port = htons (atoi(argv[1]));
     int number_of_bytes = 0; //number of bytes received
-    printf("Third checpoint\n");
+    // printf("Third checpoint\n");
     //socket initialization
     // int socket_server = socket((*server_info).ai_family,(*server_info).ai_socktype,(*server_info).ai_protocol);
     int socket_server = socket(AF_INET, SOCK_STREAM,0);
@@ -170,7 +170,7 @@ int main(int argc, char*argv[])
     }
     //CHECK THIS CASE: WHEN should exactly the below message needs to be displayed
 
-    printf("Rstablished socket for server");
+    printf("Rstablished socket for server\n");
 
     //binding
     // if(bind(socket_server,(*server_info).ai_addr, (*server_info).ai_addrlen) < 0){
@@ -192,13 +192,13 @@ int main(int argc, char*argv[])
     	system_error("LISTEN");
     	exit(0);
     }
-    printf("%s\n","Listening to the client!" );
+    printf("Listening to the client!\n" );
 
     //select - waiting for events
     FD_SET(socket_server, &fd_master); //add server socket to master set
     //keeping count of the file descriptors
     int max_fd = socket_server; //number of file descriptors should be highest file +1 
-    printf("Max FD= %d\n",max_fd);
+    // printf("Max FD= %d\n",max_fd);
     int temp;
 
     while(1){
@@ -264,9 +264,9 @@ int main(int argc, char*argv[])
     			}else{
     					//data from existing connection
     					number_of_bytes = read(i, (struct simple_broadcast_chat_server_message *)&receive_message,sizeof(receive_message));
-                        printf("TYPE HELLO = %d\n",receive_message.header.type );
+                        // printf("TYPE HELLO = %d\n",receive_message.header.type );
                         if(receive_message.header.type == 9){
-                            printf("Entered IDLE message\n");
+                            // printf("Entered IDLE message\n");
                             client_attribute = receive_message.attribute[0]; //gets message
                         idle_message = receive_message;
                         idle_message.header.type = 9;
