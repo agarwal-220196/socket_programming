@@ -201,6 +201,7 @@ int main (int argc, char*argv[]){
 
 	//int idle_count = 0;
 	struct timeval idle_count;
+	char *username, *IPaddress;
 	int select_return_value =0;
 	if (argc!=4)
 	{
@@ -208,17 +209,74 @@ int main (int argc, char*argv[]){
 		system_error("Please specify the right arguments as above");
 	}
 
-	int socket_descriptor = socket(AF_INET, SOCK_STREAM, 0); // Wwould work for both IPv4 AND IPv6
+	 // Wwould work for both IPv4 AND IPv6
+
 	char * p; // used to point to an array if not converted,Same as MP1
 	//server add. 
 	int port_number = strtol(argv[2],&p,10);
-	struct hostent* IP =  gethostbyname(argv[1]);//IP address
+
+//	struct hostent* IP =  gethostbyname(argv[1]);//IP address
+
 	struct sockaddr_in server_address;
+	struct sockaddr_in6 server_address_6; // IPv6 address
+	struct addrinfo check , *get_addr_info=NULL; // will be used to check ipv4 vs 6.
+	int return_value_address_resolution;
+	int inet_return;
+	int socket_descriptor;
+
+	IPaddress = argv[1];
+	username = argv[3];
+
+	memset(&check, '\0', sizeof check);
+
+	check.ai_family = PF_UNSPEC;
+	check.ai_flags = AI_NUMERICHOST;
+
+// get the inforamtion about the address being ipv4 or ipv6
+	return_value_address_resolution = getaddrinfo(IPaddress, NULL, &check, &get_addr_info);
+
+	if (return_value_address_resolution==0)
+	{
+		system_error ("invalid address");
+	}
+
+	if (get_addr_info->ai_family == AF_INET)// ipv4 address 
+	{
+	 socket_descriptor = socket(AF_INET, SOCK_STREAM, 0);
+
 	bzero(&server_address, sizeof(server_address)); // same as MP 1
 	server_address.sin_family = AF_INET; //IPv4
 	server_address.sin_port   = htons(port_number); // port number as MP1
 	//memcpy(&server_address.sin_addr.s_addr, IP->h_addr, IP->h_length);
+	inet_return = inet_pton(AF_INET, IPaddress, &(server_address.sin_addr));	
+	//connec to the server/or we can say the chatroom. 
+	int connect_status = connect(socket_descriptor, (struct sockaddr *)&server_address, sizeof(server_address));
+	if (connect_status < 0)//error
+		system_error("Error connecting to the server");
+	
+	printf("Connection made, trying to join");
+	}
 
+	else if(get_addr_info->ai_family == AF_INET6)
+	{
+	 socket_descriptor = socket(AF_INET6, SOCK_STREAM,0);
+	bzero(&server_address_6, sizeof(server_address_6));
+	server_address_6.sin6_family = AF_INET6;
+	server_address_6.sin6_port = htons(port_number);
+	inet_pton(AF_INET6, IPaddress,&server_address_6.sin6_addr);
+
+	int connect_status6 = connect(socket_descriptor, (struct sockaddr*)&server_address_6, sizeof(server_address_6));
+
+	if (connect_status6<0)
+		system_error("Client:ipv6 cant connect");
+	} 
+
+	else 
+	{
+		system_error("Invalid address.");
+	}
+
+	freeaddrinfo(get_addr_info);
 
 	//adding file descriptor to the select. 
 	fd_set main_file_descriptor;
@@ -228,13 +286,6 @@ int main (int argc, char*argv[]){
 	FD_ZERO(&read_file_descriptor);
 	FD_ZERO(&main_file_descriptor); 
 
-	//connec to the server/or we can say the chatroom. 
-	int connect_status = connect(socket_descriptor, (struct sockaddr *)&server_address, sizeof(server_address));
-printf("hi exit if %d \n",connect_status );
-	if (connect_status < 0)//error
-		system_error("Error connecting to the server");
-	
-	printf("Connection made, trying to join");
 
 	join_chat(socket_descriptor, argv);
 
