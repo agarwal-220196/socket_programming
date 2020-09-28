@@ -144,9 +144,9 @@ int read_server_message(int socket_descriptor){
 
 	if (server_message.header.type ==9)
 	{
-		if ((server_message.attribute[0].payload_data!=NULL||server_message.attribute[0].payload_data!='\0')
-		   &&server_message.attribute[0].type ==2){ //i.e.sending the username that joinded
-			printf("%s user is IDLE \n",server_message.attribute[0].payload_data);
+		if ((server_message.attribute[1].payload_data!=NULL||server_message.attribute[1].payload_data!='\0')
+		   &&server_message.attribute[1].type ==2){ //i.e.sending the username that joinded
+			printf("%s user is IDLE \n",server_message.attribute[1].payload_data);
 		}
 
 	return_status = 0; 
@@ -178,7 +178,7 @@ void send_to_server(int socket_descriptor, bool timeout)
 	fd_set read_file_descriptor;
 	if (timeout == true)
 	{
-		header.version = '9';
+		message.header.type = 9;
 		attribute.type =4;//idle message 
 		char idle_array[29]  = "I am IDLE please talk to me.";
 		idle_array[29] = '\0';

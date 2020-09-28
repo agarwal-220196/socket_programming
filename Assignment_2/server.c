@@ -110,7 +110,7 @@ int client_join_check(int fd_client){
 
 int main(int argc, char*argv[])
 {
-	struct simple_broadcast_chat_server_message receive_message, forward_message, join_broadcast_message, leave_broadcast_message;
+	struct simple_broadcast_chat_server_message receive_message, forward_message, join_broadcast_message, leave_broadcast_message,idle_message;
 	struct simple_broadcast_chat_server_attribute client_attribute;
 
     printf("Here it is\n");
@@ -264,8 +264,46 @@ int main(int argc, char*argv[])
     			}else{
     					//data from existing connection
     					number_of_bytes = read(i, (struct simple_broadcast_chat_server_message *)&receive_message,sizeof(receive_message));
-                        printf("Number of Bytes = %d\n",number_of_bytes );
-    					if(number_of_bytes <= 0){
+                        printf("TYPE HELLO = %d\n",receive_message.header.type );
+                        if(receive_message.header.type == 9){
+                            printf("Entered IDLE message\n");
+                            client_attribute = receive_message.attribute[0]; //gets message
+                        idle_message = receive_message;
+                        idle_message.header.type = 9;
+                        idle_message.attribute[1].type =2;
+                        //////check this line below : I thing needs to be changed to attribute[1]
+                        // idle_message.attribute[0].length = receive_message.attribute[0].length;
+                        char name[16];
+                        strcpy(name,receive_message.attribute[1].payload_data);
+
+                        int k;
+                        for(k=0; k<number_of_clients;k++){
+                            if(clients[k].file_descriptor == i){
+                                strcpy(idle_message.attribute[1].payload_data,clients[k].username);
+                            }
+                        }
+                        printf("%s is IDLE\n",idle_message.attribute[1].payload_data);
+
+                        //Forward the message to all the clients except the current one and server
+                        int j;
+                        for (j=0; j<=max_fd; j++){
+                            //send forward message
+                            if(FD_ISSET(j , &fd_master)){
+                                if(j!=socket_server && j!=i){
+                                    //CHECK: I guess the condition should be false
+                                    if((write(j, (void*)&idle_message,number_of_bytes))==-1){
+                                        system_error("Forwarding IDLE message");
+                                    }
+                                }
+                            }
+                        }
+
+
+
+                        }
+                        else{
+                        if(number_of_bytes <= 0){
+
     						if(number_of_bytes == 0){
     							int k;
     							for(k=0; k < number_of_clients; k++){
@@ -332,7 +370,8 @@ int main(int argc, char*argv[])
     							}
     						}
     					}
-    				}//End forward message
+    				}
+                    }//End forward message
     		}//End dealing with data from client
     	}//else{
 //            printf("Garbage\n");}//end new connection
