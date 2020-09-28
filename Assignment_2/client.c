@@ -18,7 +18,7 @@
 #include <unistd.h>
 #include <netinet/in.h>
 #include <time.h>
-
+#include <stdbool.h>
 
 //Simple Broadcast Chat server structures. 
 #include "common_def.h"
@@ -148,7 +148,7 @@ int read_server_message(int socket_descriptor){
 
 
 
-void send_to_server(int socket_descriptor)
+void send_to_server(int socket_descriptor, bool timeout)
 {
 	struct simple_broadcast_chat_server_header header;
 	header.version = '3';
@@ -162,8 +162,19 @@ void send_to_server(int socket_descriptor)
 
 	int number_of_bytes_read_from_user = 0;
 	char temp_message_holder[512];
+//	char *pointer = temp_message_holder;
 	struct timeval wait_time_to_send;
 	fd_set read_file_descriptor;
+	if (timeout == true)
+	{
+		attribute.type =4;//idle message 
+		char idle_array[]  = "I am IDLE please talk to me.";
+		strcpy(attribute.payload_data, idle_array);
+		message.attribute[0] = attribute;
+		message.attribute[0].length = 28; // the length of the string above. 
+	}
+	else 
+	{
 
 	wait_time_to_send.tv_sec = 2;
 	wait_time_to_send.tv_usec = 0;
@@ -184,13 +195,15 @@ void send_to_server(int socket_descriptor)
 	strcpy(attribute.payload_data, temp_message_holder);// copy the message to payload
 	message.attribute[0] = attribute;
 	message.attribute[0].length = number_of_bytes_read_from_user -1 ; //excluding the extra read char
-	write(socket_descriptor, (void *)&message, sizeof(message));
-
-	}
-	else {
+	}else {
 
 		printf("CLIENT:Timeout occrued \n");
 	}
+
+	}
+	write(socket_descriptor, (void *)&message, sizeof(message));
+
+	
 }
 
 
@@ -302,11 +315,16 @@ int main (int argc, char*argv[]){
 	if ((select_return_value = select(socket_descriptor+1, &read_file_descriptor,NULL,NULL,&idle_count))==-1)
 		system_error("CLIENT:SELECT error");
 
+	if (select_return_value == 0)// idle time of 10 secs have passed. 
+	{	
+		send_to_server(socket_descriptor, 1);
+	}
+
 	if (FD_ISSET(socket_descriptor,&read_file_descriptor))//read from the socket
 		read_server_message(socket_descriptor);
 
 	if (FD_ISSET(STDIN_FILENO, &read_file_descriptor))//read from commadn line send to the server
-		send_to_server(socket_descriptor);
+		send_to_server(socket_descriptor, 0 );
 	}
 
 	
