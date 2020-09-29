@@ -264,7 +264,7 @@ int main(int argc, char*argv[])
     			}else{
     					//data from existing connection
     					number_of_bytes = read(i, (struct simple_broadcast_chat_server_message *)&receive_message,sizeof(receive_message));
-                        // printf("TYPE HELLO = %d\n",receive_message.header.type );
+                         //printf("TYPE HELLO = %d\n",receive_message.header.type );
                         if(receive_message.header.type == 9){
                             // printf("Entered IDLE message\n");
                             client_attribute = receive_message.attribute[0]; //gets message
@@ -288,9 +288,10 @@ int main(int argc, char*argv[])
                         int j;
                         for (j=0; j<=max_fd; j++){
                             //send forward message
+                              receive_message.header.type = 69;
                             if(FD_ISSET(j , &fd_master)){
                                 if(j!=socket_server && j!=i){
-                                    //CHECK: I guess the condition should be false
+                                    //CHECK: I guess the condition should be fals
                                     if((write(j, (void*)&idle_message,number_of_bytes))==-1){
                                         system_error("Forwarding IDLE message");
                                     }
@@ -305,18 +306,29 @@ int main(int argc, char*argv[])
                         if(number_of_bytes <= 0){
 
     						if(number_of_bytes == 0){
-    							int k;
+    							int k,flag=0,x;
     							for(k=0; k < number_of_clients; k++){
     								if(clients[k].file_descriptor == i){
     									leave_broadcast_message.attribute[0].type = 2;
     									strcpy(leave_broadcast_message.attribute[0].payload_data,clients[k].username);
+                                        flag = 1;
     								}
+
+                                    // printf("Flag value = %d\n",flag );
+                                    if(flag == 1){
+                                        // printf("Inside Flag\n" );
+                                        for(x=k; x<(number_of_clients-1); x++){
+                                            clients[x] = clients[x+1];
+                                            // printf("Client k username sarkar = %s\n",clients[x].username );}
+                                        number_of_clients--;
+                                        flag=0;
+                                    }
     							}
     							printf("User %s has left the CHATROOM\n", leave_broadcast_message.attribute[0].payload_data );
     							leave_broadcast_message.header.version = 3;
     							leave_broadcast_message.header.type = 6;
     							int j;
-    							for (j = 0; j <=max_fd; j++){
+    							for (j = 0; j <(max_fd); j++){
     								if(FD_ISSET(j,&fd_master)){
     									if(j!=socket_server && j!=client_new){
     										if((write(j,(void*)&leave_broadcast_message,sizeof(leave_broadcast_message))) == -1){
@@ -325,19 +337,20 @@ int main(int argc, char*argv[])
     									}
     								}
     							}
-    		                      printf("Fourth checkpoint\n");
+    		                     // max_fd -= 1;
+                                  // printf("Fourth checkpoint\n");
     					}else if(number_of_bytes < 0){
     						// system_error("RECEIVING MESSAGE, WAITING");
                             printf("RECEIVING MESSAGE, WAITING\n");
     					}
     					close(i);
     					FD_CLR(i, &fd_master); //client is removed from the master set of connected clients
-    					int x;
-    					for(x=i; x<number_of_clients; x++){
-    						clients[x] = clients[x+1];
+    					// int x;
+    					// for(x=i; x<number_of_clients; x++){
+    					// 	clients[x] = clients[x+1];
 
-    					}
-    					number_of_clients--;
+    					// }
+    					// number_of_clients--;
     				}else{
     					//number_of_bytes > 0
     					client_attribute = receive_message.attribute[0]; //gets message
