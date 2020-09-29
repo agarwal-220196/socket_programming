@@ -319,7 +319,8 @@ int main(int argc, char*argv[])
                                         // printf("Inside Flag\n" );
                                         for(x=k; x<(number_of_clients-1); x++){
                                             clients[x] = clients[x+1];
-                                            // printf("Client k username sarkar = %s\n",clients[x].username );}
+                                            // printf("Client k username sarkar = %s\n",clients[x].username );
+                                        }
                                         number_of_clients--;
                                         flag=0;
                                     }
@@ -328,9 +329,9 @@ int main(int argc, char*argv[])
     							leave_broadcast_message.header.version = 3;
     							leave_broadcast_message.header.type = 6;
     							int j;
-    							for (j = 0; j <(max_fd); j++){
+    							for (j = 0; j <=(max_fd); j++){
     								if(FD_ISSET(j,&fd_master)){
-    									if(j!=socket_server && j!=client_new){
+    									if(j!=socket_server){
     										if((write(j,(void*)&leave_broadcast_message,sizeof(leave_broadcast_message))) == -1){
     											system_error("BROADCASTING LEAVE MESSAGE");
     										}
