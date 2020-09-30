@@ -113,6 +113,12 @@ int main(int argc, char*argv[])
 	struct simple_broadcast_chat_server_message receive_message, forward_message, join_broadcast_message, leave_broadcast_message,idle_message;
 	struct simple_broadcast_chat_server_attribute client_attribute;
 
+    if (argc!=4)
+    {
+        printf("CLIENT:USAGE:./echos <IP_address> <port_number> <number_of_clients> \n");
+        system_error("Please specify the right arguments as above");
+    }
+
     // printf("Here it is\n");
 	//Server's address information
 	struct sockaddr_in server_address, *clients_address;
@@ -120,10 +126,10 @@ int main(int argc, char*argv[])
     // printf("First chec\n");
     // server_address.sin_addr.s_addr = inet_addr(INADDR_ANY);
     // printf("Second checpoint \n");
-    server_address.sin_port = htons(atoi(argv[1]));
+    server_address.sin_port = htons(atoi(argv[2]));
     socklen_t server_addr_size = sizeof(server_address);
 
-    int maximum_number_of_clients = atoi(argv[2]);
+    int maximum_number_of_clients = atoi(argv[3]);
     printf("Maximum number%d\n", maximum_number_of_clients);
 
     int server_status;
@@ -151,7 +157,7 @@ int main(int argc, char*argv[])
     /* we don't want to bind the server socket to a specific IP.
     Basically during bind, we want to accept connections to all IPs*/
     addr_client.sin_addr.s_addr = htons(INADDR_ANY);
-    addr_client.sin_port = htons (atoi(argv[1]));
+    addr_client.sin_port = htons (atoi(argv[2]));
     int number_of_bytes = 0; //number of bytes received
     // printf("Third checpoint\n");
     //socket initialization

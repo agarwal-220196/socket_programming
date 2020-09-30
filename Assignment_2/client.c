@@ -231,7 +231,7 @@ int main (int argc, char*argv[]){
 	int select_return_value =0;
 	if (argc!=4)
 	{
-		printf("CLIENT:USAGE:./client <IP_address> <port_number> <user_name> \n");
+		printf("CLIENT:USAGE:./echo <IP_address> <port_number> <user_name> \n");
 		system_error("Please specify the right arguments as above");
 	}
 
