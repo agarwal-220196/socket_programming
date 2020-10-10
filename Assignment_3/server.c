@@ -28,11 +28,11 @@ int check_timeout(int file_descriptor)//timeout mechanisim for checking lost pac
 	fd_set receive_set;
 	struct timeval time_value;
 	FD_ZERO(&receive_set);
-	FD_SET(fd, &receive_set);
+	FD_SET(file_descriptor, &receive_set);
 
-	time.tv_sec = TIMEOUT;
-	time.tv_usec =0;
-	return (select(fd+1, &receive_set, NULL, NULL, &tv));
+	time_value.tv_sec = TIMEOUT;
+	time_value.tv_usec =0;
+	return (select(file_descriptor+1, &receive_set, NULL, NULL, &time_value));
 
 }
  
@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
 	
 	if ((bind(socket_server, (struct sockaddr*)&server_address, sizeof(server_address)))<0)
 	{
-		printf("Binding process failed due to %s \n",strerror(errno);		
+		printf("Binding process failed due to %s \n",strerror(errno));		
 		close(socket_server);
 		return 1;
 	}
@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
 // GET the mode of the incoming file. 
 			if (strcasecmp(&receive_buffer[filename_length+3], "netascii")==0)
 				mode_of_op = 1;
-			else if (strcascmp(&receive_buffer[filename_length+3],"octet")==0)
+			else if (strcasecmp(&receive_buffer[filename_length+3],"octet")==0)
 				mode_of_op = 2;
 			else
 			{
