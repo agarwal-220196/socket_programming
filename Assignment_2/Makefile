@@ -8,32 +8,19 @@
 #for compiling server.c
 sample : echos.o echo.o
 
-<<<<<<< HEAD
 
 echos.o: server.c common_def.h 
-	cc -c server.c -o echos.o
-=======
-echos.o: server.c common_def.h
-	gcc -I . server.c -o echos
->>>>>>> dbbfb0955317ae862a9f57e764d9a7d4caf476cd
+	gcc -I. server.c -o echos
+
 
 #for compiling client.c
 
 echo.o: client.c common_def.h
-<<<<<<< HEAD
-	cc -c client.c -o echo.o
-=======
-	gcc -I . client.c -o echo
->>>>>>> dbbfb0955317ae862a9f57e764d9a7d4caf476cd
+	gcc -I. client.c -o echo
 
 #clean to discard previous .o files
 clean:
-<<<<<<< HEAD
-# 	$(RM) *.o
 	rm -f sample *.o core
 
 
 
-=======
-	$(RM) echo*
->>>>>>> dbbfb0955317ae862a9f57e764d9a7d4caf476cd
