@@ -126,7 +126,7 @@ int main (int argc, char *argv[]){
 	  //else bytes are received correctly proceed ahead. 
 	  
 	memcpy (&op_code1, &buffer, 2);
-	op_code1 = ntons(op_code1);
+	op_code1 = ntohs(op_code1);
 	
 	pid = fork();//create the child. 
 	
@@ -142,7 +142,7 @@ int main (int argc, char *argv[]){
 			
 			for (b=0; buffer[2+b]!='\0'; b++)
 			{
-				file_name = buffer[2+b];
+				file_name[b] = buffer[2+b];
 			}
 			//once you get the file name add a eof to the file name. b is already incremented to the position before exiting so can be added at the same location
 			
@@ -180,7 +180,7 @@ int main (int argc, char *argv[]){
 					setsockopt(new_socket_file_descriptor,SOL_SOCKET,SO_REUSEADDR,&true_yes,sizeof(int));
 					if (bind(new_socket_file_descriptor, p->ai_addr, p->ai_addrlen) == -1) {
 						close(new_socket_file_descriptor);
-						err_sys("Error: SERVER (new_socket_file_descriptor): bind issues.");
+						system_error("Error: SERVER (new_socket_file_descriptor): bind issues.");
 						continue;
 					}
 					break;
@@ -219,7 +219,7 @@ int main (int argc, char *argv[]){
 				send_response = sendto(new_socket_file_descriptor, payload, (read_return + 4), 0, (struct sockaddr*)&client, length_client);
 				
 				neg_ack = 1;
-				if (send_res < 0)
+				if (send_response < 0)
 					system_error("ERROR to send first packet: \n");
 				else 
 					printf("First block successfully sent .\n");
