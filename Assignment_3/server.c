@@ -136,9 +136,9 @@ int main(int argc, char *argv[])
 
 // GET the mode of the incoming file. 
 			if (strcasecmp(&receive_buffer[filename_length+3], "netascii")==0)
-				mode_of_op = 1;
+				{mode_of_op = 1; printf("mode %d\n", mode_of_op);}
 			else if (strcasecmp(&receive_buffer[filename_length+3],"octet")==0)
-				mode_of_op = 2;
+				{mode_of_op = 2;printf("mode %d \n", mode_of_op);}
 			else
 			{
 				//mode not specified. 
@@ -173,6 +173,10 @@ int main(int argc, char *argv[])
 					close(socket_server);
 					return 1;
 				}
+			}
+			else
+			{
+				printf("file pointer %p\n",file_pointer);
 			}
 
 			//MODE REQUEST PROCESSING

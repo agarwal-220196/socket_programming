@@ -345,7 +345,19 @@ int main (int argc, char *argv[]){
 				}
 				freeaddrinfo(client_info);
 				printf("WRQ: Request received to SERVER from client\n");
-				FILE *file_pointer_write = fopen("WRQ_data.txt", "w+"); //check this here
+							bzero(file_name, MAX_SIZE);
+			
+			// check for the EOF character using a for loop.
+			
+			for (b=0; buffer[2+b]!='\0'; b++)
+			{
+				file_name[b] = buffer[2+b];
+			}
+			//once you get the file name add a eof to the file name. b is already incremented to the position before exiting so can be added at the same location
+			
+			file_name[b] = '\0';
+				printf("FILENAME : %s\n",file_name );
+				FILE *file_pointer_write = fopen(file_name, "w+"); //check this here
 				if(file_pointer_write == NULL)
 				{
 					printf("SERVER:WRQ: File cannot be opened\n");
