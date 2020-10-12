@@ -223,6 +223,187 @@ int main (int argc, char *argv[]){
 					system_error("ERROR to send first packet: \n");
 				else 
 					printf("First block successfully sent .\n");
+
+				while(1){
+					if(timeout(new_socket_file_descriptor,1)!= 0){
+						bzero(buffer,sizeof(buffer));
+						bzero(payload,sizeof(payload));
+						receive_byte = recvfrom(new_socket_file_descriptor, buffer, sizeof(buffer), 0, (struct sockaddr*)&client,&length_client);
+						timeout_c = 0;
+						if(receive_byte < 0){
+							system_error("ERROR: Data not received");
+							return 6;
+						}
+						else{
+							printf("RECEIVED DATA");
+						}
+						memcpy(&op_code1, &buffer[0],2);
+						if(ntohs(op_code1)==4){					//OPCODE = 4; ACK
+							bzero(&block_num, sizeof(block_num));
+							memcpy(&block_num,&buffer[2],2);
+							block_num = ntohs(block_num);
+							printf("Acknowledgement %i received\n",block_num);
+							//EOF check
+							if(block_num == neg_ack){
+								printf("Expected Acknowledgement has arrived\n");
+								neg_ack = (neg_ack + 1)%65536;
+								if(last == 1){
+									close(new_socket_file_descriptor);
+									fclose(file_pointer);
+									printf("SERVER: Full file sent completely \n");
+									exit(5);
+									last = 0;
+								}
+								else{
+									bzero(data_read,sizeof(data_read));
+									read_return = fread (&data_read,1,512,file_pointer);
+									if(read_return >= 0){
+										if(read_return < 512)
+											last = 1;
+										data_read[read_return]='\0';
+										block_number = htons(((block_num+1)%65536)); 
+										op_code2 = htons(3);
+										memcpy(&payload[0],&op_code2,2);
+										memcpy(&payload[2],&block_number,2);
+
+										for(b=0;data_read[b] != '\0';b++){
+											payload[b+4] = data_read[b];
+										}
+
+										bzero(payload_copy,sizeof(payload_copy));
+										memcpy(&payload_copy[0],&payload[0], 516);
+										int send_response = sendto(new_socket_file_descriptor,payload,(read_return+4),0,(struct sockaddr*)&client, length_client);
+
+										if(send_response < 0)
+											system_error("ERROR: send to");
+									}
+								}
+							}
+							else {
+								printf("ERROR: Expected ACK has not arrived :NEG ACK = %d, Block number =%d\n", neg_ack,block_number);
+							}
+						}
+					}
+					else{
+						timeout_c ++ ;
+						printf("TIMEOUT OCCURED\n");
+						if(timeout_c == 10){
+							printf("TIMEOUT occured 10 times. Closing socket connection with client\n");
+							close(new_socket_file_descriptor);
+							fclose(file_pointer);
+							exit(6);
+						}
+						else{
+							bzero(payload,sizeof(payload));
+							memcpy(&payload[0],&payload_copy[0],516);
+							memcpy(&block_number,&payload[2],2);
+							block_number = htons(block_number);
+							printf("RETRANSMIT: Data with Block number : %d\n",block_number );
+							send_response = sendto(new_socket_file_descriptor,payload_copy,(read_return+4),0,(struct sockaddr*)&client,length_client);
+							bzero(payload_copy,sizeof(payload_copy));
+							memcpy(&payload_copy[0],&payload[0],516);
+
+							if(send_response < 0)
+								system_error("ERROR: In sendto ");
+							}		
+						}
+					}
+				}
+				else {
+					unsigned short int ERROR_CODE = htons(1);
+					unsigned short int ERROR_OPCODE = htons(5);
+					char ERROR_MESSAGE[512] = "File not found";
+					char ERROR_BUFFER [516] = {0};
+					memcpy(&ERROR_BUFFER[0],&ERROR_OPCODE,2);
+					memcpy(&ERROR_BUFFER[2],&ERROR_CODE,2);
+					memcpy(&ERROR_BUFFER[4], &ERROR_MESSAGE, 512);
+					sendto(socket_file_descriptor,ERROR_BUFFER, 516, 0 ,(struct sockaddr*)&client, length_client);
+					printf("SERVER CLEANUP: File names do not match \n");
+					close(socket_file_descriptor);
+					fclose(file_pointer);
+					exit(4);
+				}
+			}
+			else if(op_code1 == 2){
+				*ephemeral_pt = htons(0);
+				if((return_get_addr = getaddrinfo(NULL, ephemeral_pt, &address_dynamic, &client_info)) != 0){
+					fprintf(stderr, "getaddrinfo: %s\n",gai_strerror(return_get_addr) );
+					return 10;
+				}
+				for (p = client_info; p != NULL; p = p->ai_next){
+					if((new_socket_file_descriptor = socket(p->ai_family, p->ai_socktype, p->ai_protocol))== -1){
+						system_error("ERROR: SERVER: child socket");
+						continue;
+					}
+					setsockopt(new_socket_file_descriptor,SOL_SOCKET,SO_REUSEADDR,&true_yes, sizeof(int));
+					if(bind(new_socket_file_descriptor, p->ai_addr, p->ai_addrlen) == -1){
+						close(new_socket_file_descriptor);
+						system_error("ERROR: SERVER: bind new socket");
+						continue;
+					}
+					break;
+				}
+				freeaddrinfo(client_info);
+				printf("WRQ: Request received to SERVER from client\n");
+				FILE *file_pointer_write = fopen("WRQ_data.txt", "w+"); //check this here
+				if(file_pointer_write == NULL)
+				{
+					printf("SERVER:WRQ: File cannot be opened\n");
+				}
+				op_code2 = htons(4);
+				block_number =  htons(0);
+				bzero(ack, sizeof(ack));
+				memcpy(&ack[0],&op_code2,2);
+				memcpy(&ack[2],&block_number, 2);
+				send_response = sendto(new_socket_file_descriptor, ack, 4, 0, (struct sockaddr*)&client, length_client);
+				neg_ack = 1;
+				if(send_response < 0)
+					system_error("ERROR: WRQ: ACK: sendto");
+				while(1){
+					bzero(buffer, sizeof(buffer));
+					receive_byte = recvfrom(new_socket_file_descriptor, buffer, sizeof(buffer), 0, (struct sockaddr*)&client, &length_client);
+					if(receive_byte < 0){
+						system_error("ERROR:WRQ: Data not received");
+						return 9;
+					}
+					bzero(data_read, sizeof(data_read));
+					memcpy(&block_number,&buffer[2],2);
+					g=0;
+					for(b =0; buffer[b+4]!='\0';b++){
+						if(buffer[b+4] == '\n'){
+							printf("LF CHARACTER PRESENT\n");;
+							g++;
+							if(b-g < 0)
+								printf("ERROR: b - g less than zero\n");
+							data_read[b-g] = '\n';
+						}
+						else{
+							data_read[b-g] = buffer[b+4];
+						}
+					}
+					fwrite(data_read,1, (receive_byte- 4 - g),file_pointer_write);
+					block_number = ntohs(block_number);
+
+					if(neg_ack == block_number){
+						printf("SERVER: DATA RECEiVED: BLOCK NUMBER :%d\n",neg_ack );
+						printf("SERVER: DATA EXPECTED received\n");
+						op_code2 = htons(4);
+						block_number = ntohs(neg_ack);
+						bzero(ack,sizeof(ack));
+						memcpy(&ack[0],&op_code2,2);
+						memcpy(&ack[2],&block_number,2);
+						printf("SERVER ACK SENT for block number %d\n",htons(block_number) );
+						send_response = sendto(new_socket_file_descriptor,ack,4,0,(struct sockaddr*)&client, length_client);
+						if(receive_byte < 516){
+							printf("Last Data block has arrived.Closing connection\n");
+							close(new_socket_file_descriptor);
+							fclose(file_pointer_write);
+							exit(9);
+
+						}
+						neg_ack = (neg_ack + 1)%65536;
+					}
+				}
 			}
 		
 		}
@@ -230,30 +411,4 @@ int main (int argc, char *argv[]){
 	
   }
   
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-	
-}
+
