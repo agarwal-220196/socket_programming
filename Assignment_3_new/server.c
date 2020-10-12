@@ -210,12 +210,12 @@ int main (int argc, char *argv[]){
 				memcpy(&payload[0], &op_code2, 2);             // 2 Bytes
 				memcpy(&payload[2], &block_number, 2);         // 4th Byte 
 			
-				for (b = 0; data_read[b] != '\0'; b++) {        
-					payload[b+4] = data_read[b];// concating the data. 
-				}
+				//for (b = 0; data_read[b] != '\0'; b++) {        
+				//	payload[b+4] = data_read[b];// concating the data. 
+				//}
 				
-				bzero(payload_copy, sizeof(payload_copy)); // reset it to zero. 
-				memcpy(&payload_copy[0], &payload[0], 516); // copy all the bytes. 
+				//bzero(payload_copy, sizeof(payload_copy)); // reset it to zero. 
+				memcpy(&payload[4], data_read, read_return); // copy all the bytes. 
 				send_response = sendto(new_socket_file_descriptor, payload, (read_return + 4), 0, (struct sockaddr*)&client, length_client);
 				
 				neg_ack = 1;
@@ -381,20 +381,21 @@ int main (int argc, char *argv[]){
 					}
 					bzero(data_read, sizeof(data_read));
 					memcpy(&block_number,&buffer[2],2);
-					g=0;
-					for(b =0; buffer[b+4]!='\0';b++){
-						if(buffer[b+4] == '\n'){
-							printf("LF CHARACTER PRESENT\n");;
-							g++;
-							if(b-g < 0)
-								printf("ERROR: b - g less than zero\n");
-							data_read[b-g] = '\n';
-						}
-						else{
-							data_read[b-g] = buffer[b+4];
-						}
+					g=receive_byte;
+					for(b =0; g>0;g--){
+						//if(buffer[b+4] == '\n'){
+						//	printf("LF CHARACTER PRESENT\n");;
+						//	g++;
+						//	if(b-g < 0)
+						//		printf("ERROR: b - g less than zero\n");
+						//	data_read[b-g] = '\n';
+						//}
+						//else{
+							data_read[b] = buffer[b+4];
+							b++;
+						//}
 					}
-					fwrite(data_read,1, (receive_byte- 4 - g),file_pointer_write);
+					fwrite(data_read,1, (receive_byte- 4),file_pointer_write);
 					block_number = ntohs(block_number);
 
 					if(neg_ack == block_number){
