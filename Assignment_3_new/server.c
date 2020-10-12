@@ -266,12 +266,13 @@ int main (int argc, char *argv[]){
 										memcpy(&payload[0],&op_code2,2);
 										memcpy(&payload[2],&block_number,2);
 
-										for(b=0;data_read[b] != '\0';b++){
-											payload[b+4] = data_read[b];
-										}
+										//for(b=0;data_read[b] != '\0';b++){
+										//	payload[b+4] = data_read[b];
+										//}
 
-										bzero(payload_copy,sizeof(payload_copy));
-										memcpy(&payload_copy[0],&payload[0], 516);
+										//bzero(payload_copy,sizeof(payload_copy));
+										printf("actual bytes read from file %d",read_return);
+										memcpy(&payload[4],data_read, read_return);
 										int send_response = sendto(new_socket_file_descriptor,payload,(read_return+4),0,(struct sockaddr*)&client, length_client);
 
 										if(send_response < 0)
