@@ -22,11 +22,11 @@ int parser_proxy(const char* sub_hdr, char* main_buf, char* final_op){
 	
 	string_sub += strlen(sub_hdr);
 	while(*string_sub == ' ') 
-		++st;
+		++string_sub;
 	while(*(end_sub - 1) == ' ') 
 		--end_sub;
 	strncpy(final_op, string_sub, end_sub - string_sub);// copy to the final op
-	op[final_op - string_sub] = '\0'; // eos is requirede. 
+	final_op[end_sub - string_sub] = '\0'; // eos is requirede. 
 	return 1;
 
 }
@@ -55,11 +55,11 @@ int parser_client(char* URL, char *host_name, int *port_change, char *parse_path
   else{
     tempH = strtok(t1, "/");   
     *port_change = 80;
-    tempP = tmp2 + strlen(tempH);
+    tempP = t2 + strlen(tempH);
   }
   if (strcmp(tempP, "") == 0)
     strcpy(tempP, "/");
-  memcpy(hostname, tempH, 64);
+  memcpy(host_name, tempH, 64);
   memcpy(parse_path, tempP, 256);
   return(0);
   

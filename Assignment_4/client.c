@@ -93,9 +93,9 @@ int main(int argc, char *argv[])
 	if ((strstr(buffer_to_receive_data, "200"))!=NULL)// find a substring. 
 		printf("received sucess and saved to %s \n",host_name);
 	else if((strstr(buffer_to_receive_data, "400") != NULL))
-		printf("Bad_request and saved to %s\n", hostname);
-	else if ((strstr(buff, "404") != NULL))
-		printf("404 request and saved to %s\n", hostname);
+		printf("Bad_request and saved to %s\n", host_name);
+	else if ((strstr(buffer_to_receive_data, "404") != NULL))
+		printf("404 request and saved to %s\n", host_name);
 	
 	pointer = strstr(buffer_to_receive_data, "\r\n\r\n");
 	fwrite(pointer+4,1,strlen(pointer)-4, file_pointer);
