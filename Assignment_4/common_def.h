@@ -34,7 +34,7 @@ int parser_proxy(const char* sub_hdr, char* main_buf, char* final_op){
 int parser_client(char* URL, char *host_name, int *port_change, char *parse_path){
 	char *token_url;
 	char *tempH, *tempP, *t1, *t2;
-	char strings;
+	char strings[16];//changed by dhiraj : added [16]
 	
 	if (strstr(URL,"http") != NULL){
 		token_url = strtok(URL, ":");
