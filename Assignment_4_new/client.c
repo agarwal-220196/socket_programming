@@ -27,7 +27,7 @@
 #include <time.h>
 #include <math.h>
 #include <stdint.h>
-
+#include <common_def.h>
 
 /*#define PORT_NO 80 
 #define RETRIES 10
