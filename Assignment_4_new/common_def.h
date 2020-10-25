@@ -51,10 +51,10 @@ typedef struct {
     char Fname[FILE_NAME_LENGTH];
     int  Is_filled;
 	
-}cache;
+}_cache;
 
 
-cache cache[MAX_CACHE_ENTRIES];
+_cache cache[CACHE_ENTRIES];
 // day structure definition
 char *day[7] ={"Sun", "Mon", "Tues", "Wed", "Thurs", "Fri", "Sat"};
 

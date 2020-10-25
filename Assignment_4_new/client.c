@@ -55,6 +55,7 @@ cache cache[CACHE_ENTRIES];
 
 */
 
+
 int main(int argc, char*argv[])
 {
 	char buff[10000];
@@ -67,6 +68,7 @@ int main(int argc, char*argv[])
     char *path_copy;
     char *path_counter;
     int count = 0, flag_end = 0;
+   // FILE * ptr_file;
 	
 	if (argc<4)// input is not as per exepctation 
 	{
@@ -82,7 +84,7 @@ int main(int argc, char*argv[])
 	
 	remote_address_ip4.sin_family = AF_INET;
     remote_address_ip4.sin_port = htons(pt_no);// same as previous mps
-    if(inet_aton(argv[1], (struct in_add *)&remote_address_ip4.sin_addr.s_addr) == 0){
+    if(inet_aton(argv[1], (struct in_addr *)&remote_address_ip4.sin_addr.s_addr) == 0){
         system_error(argv[1]);
         
     }
@@ -141,10 +143,11 @@ int main(int argc, char*argv[])
         
     }
 
-    FILE *ptr;
-	
+   
+	FILE *ptr_file;	
+
 	// the final file get copied in the path counter and not path. 
-    file_ptr = fopen(path_counter, "w");
+   ptr_file = fopen(path_counter, "w");
     int msg_length;
 	
 	
@@ -152,7 +155,7 @@ int main(int argc, char*argv[])
     memset(buff,0,10000); 
     
 	// check if the receive is succesfll or not. In case of less than 0 report error. 
-	if((recv_msg_length = recv(client_file_descriptor, buff, 10000,0)) <= 0){
+	if((msg_length = recv(client_file_descriptor, buff, 10000,0)) <= 0){
         system_error("Receive Error:");
     }
 	// if the error received is 404 that means that the html page is not reachable. need to report it. and delete the file. 
@@ -163,14 +166,14 @@ int main(int argc, char*argv[])
     else
     {// the file received seems ok, return the first occurance of any terminators. 
         char * tp = strstr(buff, "\r\n\r\n");
-        fwrite(temp+4, 1, strlen(temp)-4, file_ptr);
+        fwrite(tp+4, 1, strlen(tp)-4, ptr_file);
         memset(buff, 0, 10000);// clear the contents before receiving the actual file and writing to the client end. 
-        while((recv_msg_length = recv(client_file_descriptor, buff, 10000,0)) > 0){// keep on writing until the reveive function returns zero. 
-            fwrite(buff, 1, recv_msg_length,file_ptr);
+        while((msg_length = recv(client_file_descriptor, buff, 10000,0)) > 0){// keep on writing until the reveive function returns zero. 
+            fwrite(buff, 1, msg_length,ptr_file);
             memset(buff, 0, 10000);
         }
     }
-    fclose(file_ptr);
+    fclose(ptr_file);
     close(client_file_descriptor);
     return 0;
 }
