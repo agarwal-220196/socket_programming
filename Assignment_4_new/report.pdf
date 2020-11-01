@@ -1,0 +1,4 @@
+HTTP/1.0 302 Redirect
+Connection: Close
+Location: https://pubs.usgs.gov/wsp/0772/report.pdf
+

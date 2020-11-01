@@ -121,7 +121,7 @@ int main(int argc, char*argv[])
 	//printf("After while loop\n");
 	// proceed only if the file count is morse than zero. 
     if(count > 0){
-        //printf("in if loop of count\n");
+      //  printf("in if loop of count\n");
         while(count >= 0){
             if(flag_end == 0){
                 strtok(path_copy, "/");// same functionality as above. 
@@ -135,7 +135,7 @@ int main(int argc, char*argv[])
         }
     }
     else{
-        //printf("Checkpoint\n");
+      //  printf("Checkpoint\n");
         path_counter = path_copy;
     }
 
@@ -160,9 +160,9 @@ int main(int argc, char*argv[])
     
 	// check if the receive is succesfll or not. In case of less than 0 report error. 
 	if((msg_length = recv(client_file_descriptor, buff, 10000,0)) <= 0){
-       // printf("Checkpoint 2 \n");
-        printf("Message length :%d\n",msg_length );
-        system_error("Receive Error:");
+      //  printf("Checkpoint 2 \n");
+        //printf("Message length :%d\n",msg_length );
+        //system_error("Receive Error:");
     }
 	// if the error received is 404 that means that the html page is not reachable. need to report it. and delete the file. 
     else if((*(buff+9) == '4') && (*(buff+10) == '0') && (*(buff+11) == '4')){
@@ -172,14 +172,17 @@ int main(int argc, char*argv[])
     }
     else
     {// the file received seems ok, return the first occurance of any terminators.
-        printf("Last else\n");
+        //printf("Last else\n");
         char * tp = strstr(buff, "\r\n\r\n");
         fwrite(tp+4, 1, strlen(tp)-4, ptr_file);
         memset(buff, 0, 10000);// clear the contents before receiving the actual file and writing to the client end. 
         while((msg_length = recv(client_file_descriptor, buff, 10000,0)) > 0){// keep on writing until the reveive function returns zero. 
             fwrite(buff, 1, msg_length,ptr_file);
             memset(buff, 0, 10000);
+
         }
+        printf("SUCCESS: Read from the server\n");
+        printf("File received : %s\n",path_counter);
     }
     fclose(ptr_file);
     close(client_file_descriptor);

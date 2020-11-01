@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
 	int index_in_cache = -1;
 	int port_http = PORT_NO;
 	int proxy_filedescriptor;
-	int i, old_destination_entry;
+	int i, old_destination_entry =0;
 	FILE *read_filepointer;
 	char *expire = NULL;
 	char *pc_token = NULL;
@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
 	if((listener_filedescriptor = socket(AF_INET, SOCK_STREAM, 0)) <0)
 	{
 		system_error("ERROR: In creating socket");
-		exit(-1);
+		//exit(-1);
 	}
 	if(bind(listener_filedescriptor,(struct sockaddr*)&addr, sizeof(struct sockaddr)) < 0)
 	{
@@ -213,7 +213,7 @@ int main(int argc, char *argv[])
 						}
 
 						memcpy(cache[old_destination_entry].u_r_l, ac_u_r_l, NAME_LENGTH);
-						sprintf(cache[old_destination_entry].Last_Modfd,"%s, %02d %s %d %02d:%02d:%02d GMT", day[timenow->tm_wday], timenow ->tm_mday, month[timenow ->tm_mon], timenow->tm_year+ 1990, timenow->tm_hour, timenow->tm_min, timenow->tm_sec  );
+						sprintf(cache[old_destination_entry].Last_Modfd,"%s, %02d %s %d %02d:%02d:%02d GMT", day[timenow->tm_wday], timenow ->tm_mday, month[timenow ->tm_mon], timenow->tm_year+ 1900, timenow->tm_hour, timenow->tm_min, timenow->tm_sec  );
 
 						remove(cache[old_destination_entry].Fname);
 						fp = fopen(cache[old_destination_entry].Fname, "w");
@@ -239,7 +239,9 @@ int main(int argc, char *argv[])
 						fclose(fp);
 
 						read_filepointer = fopen(cache[old_destination_entry].Fname, "r");
+						printf("old : %d\n",old_destination_entry);
 						fread(ac_Buffer, 1, 2048, read_filepointer);
+						//fwrite(ac_Buffer, 1, 2048, read_filepointer);
 						fclose(read_filepointer);
 
 						expire = strstr(ac_Buffer, "EXPIRES: ");
@@ -249,19 +251,22 @@ int main(int argc, char *argv[])
 						}
 						else
 						{
-							sprintf(cache[old_destination_entry].Exp, "%s, %02d %s %d %02d:%02d:%02d GMT", day[timenow->tm_wday], timenow ->tm_mday, month[timenow ->tm_mon], timenow->tm_year+ 1990, timenow->tm_hour, (timenow->tm_min)+2, timenow->tm_sec );			
+							sprintf(cache[old_destination_entry].Exp, "%s, %02d %s %d %02d:%02d:%02d GMT", day[timenow->tm_wday], timenow ->tm_mday, month[timenow ->tm_mon], timenow->tm_year+ 1900, timenow->tm_hour, (timenow->tm_min)+2, timenow->tm_sec );			
 						}
 					}
 					else
 					{
+						//printf("First CHECKPOINT \n\n");
 						if(check_if_cache_entry_expire(ac_u_r_l, timenow) >=0)
 						{
 							printf("FILE FOUND: in cache AND NOT EXPIRED\n Sending file to client..\n");
-							sprintf(cache[index_in_cache].Last_Modfd,"%s, %02d %s %d %02d:%02d:%02d GMT", day[timenow->tm_wday], timenow ->tm_mday, month[timenow ->tm_mon], timenow->tm_year+ 1990, timenow->tm_hour, timenow->tm_min, timenow->tm_sec  );
+							sprintf(cache[index_in_cache].Last_Modfd,"%s, %02d %s %d %02d:%02d:%02d GMT", day[timenow->tm_wday], timenow ->tm_mday, month[timenow ->tm_mon], timenow->tm_year+ 1900, timenow->tm_hour, timenow->tm_min, timenow->tm_sec  );
 							read_filepointer = fopen(cache[index_in_cache].Fname, "r");
+							printf("Index in cache:  %d\n", index_in_cache);
 							memset(ac_Buffer, 0, BUFFER_SIZE);
+							//printf("Outside while\n");
 							while((read_length= fread(ac_Buffer,1 , BUFFER_SIZE, read_filepointer)) > 0)
-							{
+							{	//printf("Inside while before send\n");
 								send(client_filedescriptor, ac_Buffer, read_length, 0);
 							}
 							printf("SUCCESS: SENT FILE TO CLIENT");
@@ -288,13 +293,13 @@ int main(int argc, char *argv[])
 							}
 							else
 							{
-								sprintf(cache[index_in_cache].Exp, "%s, %02d %s %d %02d:%02d:%02d GMT", day[timenow->tm_wday], timenow ->tm_mday, month[timenow ->tm_mon], timenow->tm_year+ 1990, timenow->tm_hour, timenow->tm_min, timenow->tm_sec );
+								sprintf(cache[index_in_cache].Exp, "%s, %02d %s %d %02d:%02d:%02d GMT", day[timenow->tm_wday], timenow ->tm_mday, month[timenow ->tm_mon], timenow->tm_year+ 1900, timenow->tm_hour, timenow->tm_min, timenow->tm_sec );
 
 							}
 							if(receive_length > 0)
 							{
 								printf("HTTP RESPONSE: \n %s\n",ac_Buffer );
-								if((*(ac_Buffer + 9) == '3') && (*(ac_Buffer + 10) == '0') && (*(ac_Buffer + 11) == '4'))
+								if((*(ac_Buffer + 9) == '3') && (*(ac_Buffer + 10) == '0') && (*(ac_Buffer + 11) == '4')) //3040response <---BONUS IMPLEMENTED
 								{
 									printf("FILE UPTO DATE. sending file from cache\n");
 									read_filepointer = fopen(cache[index_in_cache].Fname, "r");
@@ -323,10 +328,10 @@ int main(int argc, char *argv[])
 									}
 									else
 									{
-										sprintf(cache[index_in_cache].Exp, "%s, %02d %s %d %02d:%02d:%02d GMT", day[timenow->tm_wday], timenow ->tm_mday, month[timenow ->tm_mon], timenow->tm_year+ 1990, timenow->tm_hour, timenow->tm_min, timenow->tm_sec );
+										sprintf(cache[index_in_cache].Exp, "%s, %02d %s %d %02d:%02d:%02d GMT", day[timenow->tm_wday], timenow ->tm_mday, month[timenow ->tm_mon], timenow->tm_year+ 1900, timenow->tm_hour, timenow->tm_min, timenow->tm_sec );
 
 									}
-									sprintf(cache[index_in_cache].Last_Modfd, "%s, %02d %s %d %02d:%02d:%02d GMT", day[timenow->tm_wday], timenow ->tm_mday, month[timenow ->tm_mon], timenow->tm_year+ 1990, timenow->tm_hour, timenow->tm_min, timenow->tm_sec );
+									sprintf(cache[index_in_cache].Last_Modfd, "%s, %02d %s %d %02d:%02d:%02d GMT", day[timenow->tm_wday], timenow ->tm_mday, month[timenow ->tm_mon], timenow->tm_year+ 1900, timenow->tm_hour, timenow->tm_min, timenow->tm_sec );
 									fp = fopen(cache[index_in_cache].Fname, "w");
 									fwrite(ac_Buffer, 1, receive_length, fp);
 
@@ -359,6 +364,7 @@ int main(int argc, char *argv[])
 							printf("Last Access Time : %s\n",cache[i].Last_Modfd);
 							printf("Expiry           : %s\n", cache[i].Exp );
 							printf("File Name        : %s\n", cache[i].Fname);
+							printf("====================================================\n");
 						}
 					}
 				}

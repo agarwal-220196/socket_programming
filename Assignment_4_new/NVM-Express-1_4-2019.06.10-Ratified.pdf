@@ -1,0 +1,15 @@
+HTTP/1.1 301 Moved Permanently
+Server: nginx
+Date: Fri, 30 Oct 2020 06:57:45 GMT
+Content-Type: text/html
+Content-Length: 162
+Connection: close
+Location: https://nvmexpress.org/wp-content/uploads/NVM-Express-1_4-2019.06.10-Ratified.pdf
+
+<html>
+<head><title>301 Moved Permanently</title></head>
+<body>
+<center><h1>301 Moved Permanently</h1></center>
+<hr><center>nginx</center>
+</body>
+</html>

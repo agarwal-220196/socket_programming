@@ -206,7 +206,7 @@ int system_error(const char* error_string) //display and exit
 int month_converter (char *month)
 {
     int month_number;
-    //printf("In month_converter\n");
+    printf("In month_converter\n");
     switch(*month)
     {
         case 'J':
@@ -265,7 +265,7 @@ int month_converter (char *month)
 }
 
 int check_if_cache_entry_expire(char *u_r_l, struct tm * time_now){
-    //printf("Second checkpoint\n");
+    printf("Second checkpoint\n");
     int i =0 , return_value;
     char updated_time[TIME_LENGTH];
     for(i=0;i<10;i++)
@@ -276,9 +276,9 @@ int check_if_cache_entry_expire(char *u_r_l, struct tm * time_now){
         }
     }
     memset(updated_time,0, TIME_LENGTH);
-    //printf("Third checkpoint\n");
+    printf("Third checkpoint\n");
     sprintf(updated_time, "%s, %2d %s %4d %2d:%2d:%2d GMT", day[time_now->tm_wday],time_now->tm_mday, month[time_now->tm_mon], time_now->tm_year+1900,time_now->tm_hour,time_now->tm_min,time_now->tm_sec);
-    //printf("before sprintf\n");
+    printf("before sprintf\n");
     return_value = time_comparison(cache[i].Exp, updated_time);
     return (return_value<0)?-1:0;
 
@@ -286,7 +286,7 @@ int check_if_cache_entry_expire(char *u_r_l, struct tm * time_now){
 int time_comparison(char *old_time, char *new_time){
     int year_old, month_old, hour_old,minute_old,second_old,day_old;
     int year_new, month_new, hour_new, minute_new, second_new, day_new;
-    //printf("In time comparison 0\n");
+    printf("In time comparison 0\n");
     char actual_old_month[4];
     char actual_new_month[4];
 
@@ -296,10 +296,10 @@ int time_comparison(char *old_time, char *new_time){
     sscanf(old_time + 5,"%d %3s %d %d:%d:%d ",&day_old, actual_old_month,&year_old,&hour_old,&minute_old,&second_old );
     sscanf(new_time + 5,"%d %3s %d %d:%d:%d ",&day_new, actual_new_month,&year_new,&hour_new,&minute_new,&second_new );
    
-   //printf("In time comparison\n");
+   printf("In time comparison\n");
     month_old = month_converter(actual_old_month);
     month_new = month_converter(actual_new_month);
-    //printf("In time comparison 2 \n");
+    printf("In time comparison 2 \n");
     if(year_old < year_new) return -1;
     if(year_old>year_new) return 1;
     if(month_old<month_new) return -1;
