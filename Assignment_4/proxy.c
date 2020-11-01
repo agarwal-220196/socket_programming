@@ -48,7 +48,7 @@ int cache_update(char *URL_NAME, char* buffer, int flag_signal, int x){
 					//HEAD :  Adding new entry
 					memset(&cache_proxy[j], 0 , sizeof(struct http_cache));
 					memcpy(cache_proxy[j].URL_NAME, URL_NAME, 256);
-					cache_proxy[j].body = (char *)malloc(strlen(buffer));
+					cache_proxy[j].body = (char *)malloc(strlen(buffer)*sizeof(char));
 					memcpy(cache_proxy[j].body, buffer, strlen(buffer));
 					parser_proxy("EXPIRE : ",buffer,cache_proxy[j].EXPIRE);
 					parser_proxy("LAST_MOD :",buffer,cache_proxy[j].LAST_MOD);
@@ -63,7 +63,7 @@ int cache_update(char *URL_NAME, char* buffer, int flag_signal, int x){
 			parser_proxy("EXPIRE : ",buffer,cache_proxy[number_of_cache_entries].EXPIRE);
 			parser_proxy("LAST_MOD :",buffer,cache_proxy[number_of_cache_entries].LAST_MOD);
 			parser_proxy("DATE : ",buffer,cache_proxy[number_of_cache_entries].LAST_ACCESS_DATE);
-			cache_proxy[number_of_cache_entries].body = (char*)malloc(strlen(buffer));
+			cache_proxy[number_of_cache_entries].body = (char*)malloc(strlen(buffer)*sizeof(char));
 			memcpy(cache_proxy[number_of_cache_entries].body, buffer, strlen(buffer));
 			number_of_cache_entries ++ ;
 
@@ -89,18 +89,18 @@ int cache_update(char *URL_NAME, char* buffer, int flag_signal, int x){
 int display_cache(){
 	int t = 0;
 	if(number_of_cache_entries == 0)
-		printf("INFO: NO CACHE ENTRY. CACHE UNOCCUPIED\n");
+		fprintf(stdout,"INFO: NO CACHE ENTRY. CACHE UNOCCUPIED\n");
 	else{
-		printf("NUMBER OF ENTRIES IN CACHE : %d\n", number_of_cache_entries);
+		fprintf(stdout,"NUMBER OF ENTRIES IN CACHE : %d\n", number_of_cache_entries);
 		for (t= 0;t < number_of_cache_entries;t++){
 			if(strcmp(cache_proxy[t].EXPIRE,"")!=0 && strcmp(cache_proxy[t].LAST_MOD, "")!=0)
-				printf("Index : %d || URL : %s || ACCESS DATE: %s || EXPIRE : %s || LAST MODIFIED : %s \n\n",t,cache_proxy[t].URL_NAME,cache_proxy[t].LAST_ACCESS_DATE, cache_proxy[t].EXPIRE, cache_proxy[t].LAST_MOD);
+				fprintf(stdout,"Index : %d || URL : %s || ACCESS DATE: %s || EXPIRE : %s || LAST MODIFIED : %s \n\n",t,cache_proxy[t].URL_NAME,cache_proxy[t].LAST_ACCESS_DATE, cache_proxy[t].EXPIRE, cache_proxy[t].LAST_MOD);
 			else if(strcmp(cache_proxy[t].EXPIRE,"")==0 && strcmp(cache_proxy[t].LAST_MOD, "")==0)
-				printf("Index : %d || URL : %s || ACCESS DATE: %s || EXPIRE : N/A || LAST MODIFIED : N/A \n\n",t,cache_proxy[t].URL_NAME,cache_proxy[t].LAST_ACCESS_DATE, cache_proxy[t].EXPIRE, cache_proxy[t].LAST_MOD);
+				fprintf(stdout,"Index : %d || URL : %s || ACCESS DATE: %s || EXPIRE : N/A || LAST MODIFIED : N/A \n\n",t,cache_proxy[t].URL_NAME,cache_proxy[t].LAST_ACCESS_DATE, cache_proxy[t].EXPIRE, cache_proxy[t].LAST_MOD);
 			else if(strcmp(cache_proxy[t].EXPIRE, "") == 0)
-				printf("Index : %d || URL : %s || ACCESS DATE: %s || EXPIRE : N/A || LAST MODIFIED : %s \n\n",t,cache_proxy[t].URL_NAME,cache_proxy[t].LAST_ACCESS_DATE, cache_proxy[t].EXPIRE, cache_proxy[t].LAST_MOD);
+				fprintf(stdout,"Index : %d || URL : %s || ACCESS DATE: %s || EXPIRE : N/A || LAST MODIFIED : %s \n\n",t,cache_proxy[t].URL_NAME,cache_proxy[t].LAST_ACCESS_DATE, cache_proxy[t].EXPIRE, cache_proxy[t].LAST_MOD);
 			else if(strcmp(cache_proxy[t].LAST_MOD,"")==0)
-				printf("Index : %d || URL : %s || ACCESS DATE: %s || EXPIRE : %s || LAST MODIFIED : N/A \n\n",t,cache_proxy[t].URL_NAME,cache_proxy[t].LAST_ACCESS_DATE, cache_proxy[t].EXPIRE, cache_proxy[t].LAST_MOD);
+				fprintf(stdout,"Index : %d || URL : %s || ACCESS DATE: %s || EXPIRE : %s || LAST MODIFIED : N/A \n\n",t,cache_proxy[t].URL_NAME,cache_proxy[t].LAST_ACCESS_DATE, cache_proxy[t].EXPIRE, cache_proxy[t].LAST_MOD);
 		}
 	}
 	return 0;
@@ -176,15 +176,15 @@ int server_proxy(int client_file_descriptor){
 
 	message = (char*)malloc(LENGTH_MAX);
 	return_value = read(client_file_descriptor, message, LENGTH_MAX);
-	printf("SERVER : Request retrieved from CLIENT  : %s\n", message);
+	fprintf(stdout,"SERVER : Request retrieved from CLIENT  : %s\n", message);
 	if(return_value < 0)
 		system_error("ERROR: At SERVER: in extracting message from client");
 	sscanf(message, "%s %s %s" ,method, URL_NAME, protocol);
 
 	if((el_cache = element_cache(URL_NAME))!= -1 && (fresh_cache(el_cache) == 1)){
-		printf("INFO: SERVER: Requested URL : %s is present in cache and is FRESH \n",URL_NAME);
+		fprintf(stdout,"INFO: SERVER: Requested URL : %s is present in cache and is FRESH \n",URL_NAME);
 		cache_update(URL_NAME, NULL, 0, el_cache);
-		to_client = (char*)malloc(strlen(cache_proxy[el_cache].body));
+		to_client = (char*)malloc(strlen(cache_proxy[el_cache].body)*sizeof(char));
 		memcpy(to_client,cache_proxy[el_cache].body, strlen(cache_proxy[el_cache].body));
 	}
 	else { 
@@ -194,10 +194,10 @@ int server_proxy(int client_file_descriptor){
 		parser_client(parsed_url, http_host_name, &http_port, http_path);
 		if((socket_web_file_descriptor = socket_web (http_host_name)) == -1)
 			system_error("ERROR: In server connecting with web server");
-		printf("SERVER: SUCCESS: Connected to the webserver %d\n", socket_web_file_descriptor);
+		fprintf(stdout,"SERVER: SUCCESS: Connected to the webserver %d\n", socket_web_file_descriptor);
 
 		if(el_cache != -1){
-			printf("SERVER : Requested URL : %s is in cache but EXPIRED\n",URL_NAME);
+			fprintf(stdout,"SERVER : Requested URL : %s is in cache but EXPIRED\n",URL_NAME);
 			if(strcmp(cache_proxy[el_cache].EXPIRE ,"")!=0 && strcmp(cache_proxy[el_cache].LAST_MOD , "")!=0)
 				snprintf(condition_message, LENGTH_MAX, "%s %s %s \r \n HOST : %s \r \n USER-AGENT: HTTPTool/1.0 \r\n If-MODIFIED_SINCE: %s \r\n\r\n", method, http_path,protocol,http_host_name,cache_proxy[el_cache].EXPIRE );
 			else if (strcmp(cache_proxy[el_cache].EXPIRE ,"")==0 && strcmp(cache_proxy[el_cache].LAST_MOD , "")==0)
@@ -206,20 +206,20 @@ int server_proxy(int client_file_descriptor){
 				snprintf(condition_message, LENGTH_MAX, "%s %s %s \r \n HOST : %s \r \n USER-AGENT: HTTPTool/1.0 \r\n If-MODIFIED_SINCE: %s \r\n\r\n", method, http_path,protocol,http_host_name,cache_proxy[el_cache].LAST_MOD);
 			else if(strcmp(cache_proxy[el_cache].LAST_MOD, "")==0)
 				snprintf(condition_message, LENGTH_MAX, "%s %s %s \r \n HOST : %s \r \n USER-AGENT: HTTPTool/1.0 \r\n If-MODIFIED_SINCE: %s \r\n\r\n", method, http_path,protocol,http_host_name,cache_proxy[el_cache].EXPIRE);
-			printf("INFO: Conditional GET generated :%s\n",condition_message);
+			fprintf(stdout,"INFO: Conditional GET generated :%s\n",condition_message);
 			write(socket_web_file_descriptor, condition_message, LENGTH_MAX);
 
-			response = (char *)malloc(1000000);
+			response = (char *)malloc(1000000 *sizeof(char));
 			checksum = Extract_Read(socket_web_file_descriptor, response);
 
-			to_client = (char*)malloc(strlen(response));
+			to_client = (char*)malloc(strlen(response)*sizeof(char));
 			if(strstr(response,"304 Not Modified")!= NULL){
-				printf("'304 NOT MODIFIED' message is received. FILE IN CACHE IS SENT \n");
+				fprintf(stdout,"'304 NOT MODIFIED' message is received. FILE IN CACHE IS SENT \n");
 				memcpy(to_client, cache_proxy[el_cache].body, strlen(cache_proxy[el_cache].body));
 				cache_update(URL_NAME, NULL, 0, el_cache);
 			}
 			else{
-				printf("SERVER: FILE MODIFIED\n");
+				fprintf(stdout,"SERVER: FILE MODIFIED\n");
 				memcpy(to_client, response, strlen(response));
 				cache_update(URL_NAME, NULL, 0, el_cache);
 				cache_proxy[-- number_of_cache_entries] = clear;
@@ -227,14 +227,14 @@ int server_proxy(int client_file_descriptor){
 			}
 		}
 		else {
-			printf("SERVER: URL requested is not in cache\n");
+			fprintf(stdout,"SERVER: URL requested is not in cache\n");
 			memset(message_client_forward, 0, LENGTH_MAX);
 			snprintf(message_client_forward, LENGTH_MAX, "%s %s %s \r\n HOST: %s\r\n USER-AGENT: HTTPTool/1.0 \r\n\r\n", method, http_path,protocol,http_host_name);
-			printf("SERVER: Request generated : %s\n", message_client_forward);
+			fprintf(stdout,"SERVER: Request generated : %s\n", message_client_forward);
 			write(socket_web_file_descriptor, message_client_forward, LENGTH_MAX);
-			response= (char*)malloc(100000);
+			response= (char*)malloc(100000 *sizeof(char));
 			checksum = Extract_Read(socket_web_file_descriptor,response);
-			to_client = (char *)malloc(strlen(response));
+			to_client = (char *)malloc(strlen(response)*sizeof(char));
 			memcpy(to_client, response, strlen(response));
 			cache_update(URL_NAME, response, 1,0);
 		}
@@ -296,7 +296,7 @@ int main (int argc, char *argv[]){
 
 	addrlen = sizeof(remote_address);
 	pthread_t x;
-	printf("\n PROXY SERVER STATUS : ONLINE\n");
+	fprintf(stdout,"\n PROXY SERVER STATUS : ONLINE\n");
 	while(1)
 	{
 		communicate_file_descriptor = accept(socket_file_descriptor, (struct sockaddr*)&remote_address, &addrlen);
