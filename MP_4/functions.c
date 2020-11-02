@@ -1,3 +1,9 @@
+/*********Common fucntions code****************/
+/*Authors: Sanket Agarwal and Dhiraj Kudva
+Organization: Texas A&M University
+Description: functions for parsing the URL and generating system error messages.*/
+
+//including the library files. these are standard library files. 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -22,6 +28,7 @@ void parser_server(const char* header, char* buffer, char* output_file);
 
 void parser_server(const char* header, char* buffer, char* output_file)
 {
+	// printf("Inside parser server\n");
 	char *start_string = strstr(buffer, header);
 	if (!start_string)
 		return;
@@ -36,6 +43,7 @@ void parser_server(const char* header, char* buffer, char* output_file)
 }
 
 void parse_client(char* url_address, char *hostname_addr, int *port_address, char *path_address) {
+	// printf("Inside parse client\n");
 	char *token_no, *temp_host_holder, *temp_path_address, *tmp1_holder, *tmp2_holder;
 	int counter = 0;
 	char string_holder[16];

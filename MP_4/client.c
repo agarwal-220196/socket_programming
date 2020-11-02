@@ -33,14 +33,14 @@ int main(int argc,char *argv[])
 	server_address_client.sin_family=AF_INET;
 	server_address_client.sin_port=htons(pt_no);
 	if (inet_aton(argv[1], (struct in_addr *)&server_address_client.sin_addr.s_addr) < 0)
-		system_error ("ERR: inet_aton error");
+		system_error ("ERROR: inet_aton error");
 
 	socket_descriptor=socket(AF_INET,SOCK_STREAM,0);
 	if (socket_descriptor < 0)
-		system_error ("ERR: Socket Error");
+		system_error ("ERROR: Socket Error");
 
 	if (connect(socket_descriptor,(struct sockaddr *)&server_address_client,sizeof(server_address_client)) < 0)
-		system_error ("ERR: Connect Error");
+		system_error ("ERROR: Connect Error");
 	bzero(request, sizeof(request));
 	sprintf(request, "GET %s HTTP/1.0\r\n", argv[3]);
 	fprintf(stdout, "Request sent to proxy server: \n%s\n", request);
@@ -51,9 +51,9 @@ int main(int argc,char *argv[])
 	bzero(buffer_holder, sizeof(buffer_holder));
 	parse_client(argv[3], host_name, &port_request, path_name);
 	file_pointer=fopen(host_name, "w");
-	fprintf(stdout, "Waiting for response\n");
+	fprintf(stdout, "Waiting for response.....\n");
 	if (recv(socket_descriptor, buffer_holder, 100000, 0) < 0) {
-		system_error("CLIENT: Recv");
+		system_error("CLIENT: In receiving");
 		fclose(file_pointer);
 		close(socket_descriptor);
 		return 1;
@@ -64,6 +64,8 @@ int main(int argc,char *argv[])
 		fprintf(stdout, "'400 Bad Request' received. Saving to file: %s\n", host_name);
 	else if ((strstr(buffer_holder, "404") != NULL))
 		fprintf(stdout, "'404 Page Not Found' received. Saving to file: %s\n", host_name);
+	else if ((strstr(buffer_holder, "301") != NULL))
+		fprintf(stdout, "'301 Page' received but moved to https. Saving to file: %s\n", host_name);
 	ptr = strstr(buffer_holder, "\r\n\r\n");
 	fwrite(ptr + 4, 1, strlen(ptr) - 4, file_pointer);
 	fclose(file_pointer);
