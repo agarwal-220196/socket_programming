@@ -1,0 +1,551 @@
+                       /******************************************************************
+	Samples\I2C\i2c_24LC16.c
+	ZWorld, 2001
+
+	sample I2C interface with a Microchip 24LC16 serial EEPORM.
+	The I2C library defaults to using PD6 as SCL and PD7 as SDA. These
+	should be connected to the EEPROM chip with pull up resistors.
+
+	This sample will attempt to write a string to the beginning of the
+	memory space and then read it back.
+
+******************************************************************/
+#class auto
+//#use "SATI2CDEV.LIB"
+//#use "I2C_DEVICES1.LIB"
+
+//#use "RCM40xx.LIB"
+
+// #use "PORTBSET.LIB"
+ #use "PORTESET.LIB"
+//number of milliseconds to wait between write operations
+
+//#use "SYS.LIB"
+
+#define WRITE_TIME 5
+
+//#define PB2 0
+
+//I2C device address of EEPROM chip
+#define EEPROM_ADDRESS 0xA2
+
+//root void BitWrPortI( int io_port, char *PORTShadow, int value, int bitcode);
+
+
+#ifndef i2cClockStretchDelay
+ // Counts of I2CDelay to allow for clock stretching
+  #define i2cClockStretchDelay 2000
+#endif
+
+#ifndef i2cRetries
+	// Number of retries to get an answer from slave in i2c_write_wait
+  #define i2cRetries 1000
+#endif
+
+#ifndef I2CSCLBit
+	// The clock bit, if on port E.
+  #define I2CSCLBit 0
+#endif
+
+#ifndef I2CSDABit
+	// The data bit, if on port E.
+  #define I2CSDABit 1
+#endif
+
+
+void i2c_init();
+
+//void _sysIsSoftReset();
+
+int i2c_clocks_per_us;	//need declaration to prevent error in asm definition
+								//below
+
+
+
+
+
+
+#define WAIT_5_us asm ld a,(i2c_clocks_per_us) $\
+             sub 2 $\
+             ld b,a $\
+             db 0x10, -2
+
+//*** define C macro ***
+// a machine code version of above
+#define cWAIT_5_us asm ld a,(i2c_clocks_per_us) $\
+             sub 3 $\
+             ld b,a $\
+             db 0x10,-2
+
+#ifndef i2c_SCL_H()
+#define i2c_SCL_H() BitWrPortI(PEDDR,&PEDDRShadow,0,I2CSCLBit)
+#define i2c_SCL_L() BitWrPortI(PEDDR,&PEDDRShadow,1,I2CSCLBit)
+#define i2c_SDA_H() BitWrPortI(PEDDR,&PEDDRShadow,0,I2CSDABit)
+#define i2c_SDA_L() BitWrPortI(PEDDR,&PEDDRShadow,1,I2CSDABit)
+#define i2c_SCL()   BitRdPortI(PEDR,I2CSCLBit)
+
+#define i2c_SDA()   BitRdPortI(PEDR,I2CSDABit)
+#endif
+
+   unsigned char index1;
+
+
+
+int I2CWrite_mv(unsigned char slave,
+             unsigned char index,
+             char *buf,
+             unsigned char len);
+
+void XL24C08_put(unsigned int index,char content);
+
+void WriteEEPROM(unsigned int index,
+                 unsigned char * data,
+                 unsigned int length);
+
+int i2c_wSCL_H();
+
+int i2c_start_tx();
+
+int i2c_startw_tx();
+
+int i2c_send_ack();
+
+int i2c_check_ack();
+
+int i2c_write_char(char d);
+
+void i2c_stop_tx();
+
+int i2c_wr_wait(char d);
+
+/*----------------------- Read--------------------------------------*/
+
+int I2CRead(unsigned char slave,
+            unsigned char index,
+            char *buf,
+            unsigned char len);
+
+void ReadEEPROM(unsigned char * data,
+                unsigned int index,
+                unsigned int length);
+
+int i2c_send_nak();
+
+int i2c_read_char(char *ch);
+
+
+
+//const char test_string[] = "Hey";
+const char test_string[] = {0xA1};//,0x1E};//,0x0A};
+
+void main()
+{
+	int return_code;
+	unsigned char read_string[14];
+	unsigned long t;
+   int i;
+
+
+	i2c_init();
+   memset(read_string,0,sizeof(read_string)) ;
+  //while(1){
+	return_code =
+		I2CWrite_mv(EEPROM_ADDRESS,0, test_string, sizeof(test_string));
+
+
+//for(i=0;i<5000;i++) ;
+   t = MS_TIMER;
+	while((long)(MS_TIMER - t) < WRITE_TIME);
+  //}
+	printf("I2CWrite returned:%d\n", return_code);
+
+     	printf("Write:%d \n", test_string);
+
+
+
+  //while(1)
+// {
+
+	return_code =
+		I2CRead(EEPROM_ADDRESS,0,read_string, sizeof(read_string));
+
+      t = MS_TIMER;
+	while((long)(MS_TIMER - t) < WRITE_TIME);
+ //}
+      /*costate
+      {
+
+      if(strcmp(test_string,read_string)==0)
+	  {
+     BitWrPortI(PBDR,&PBDRShadow,0,PB2);
+     waitfor(DelayMs(10));
+     BitWrPortI(PBDR,&PBDRShadow,1,PB2);
+     }
+     else
+
+       printf("Error reading");
+     }  */
+
+  //printf("I2Cread returned:%d\n", return_code);
+
+ //	read_string[strlen(test_string)] = 0;
+
+  	printf("Read:%x \n", read_string);//, read_string[1]);
+
+  //
+
+}
+
+
+//nodebug
+
+ unsigned char cnt,len1;
+int I2CWrite_mv(unsigned char slave,
+                     unsigned char index,
+                     char *buf,
+                     unsigned char len)
+{
+
+   auto short int err;
+   if (err=i2c_startw_tx())
+   {
+      i2c_stop_tx();
+      return -10+err; // Return too long stretching
+   }
+   if (err=i2c_wr_wait(slave))
+   {
+      i2c_stop_tx();
+      return -20+err; // Return no ack on slave (retried)
+   }
+   if (err=i2c_write_char(index))
+   {
+      i2c_stop_tx();
+      return -30+err; // Return no ack on index
+   }
+
+   len1 = len;
+   for (cnt=0;cnt<len1;cnt++)
+   {
+      i2c_write_char(buf[cnt]);
+   }
+   i2c_stop_tx();
+   return 0;
+}
+
+//nodebug
+int i2c_start_tx()
+{
+	// Try to send start pulse. If clock stretching happening, return 1 else 0
+   if (i2c_wSCL_H()) return -1; // Check if clock stretching too long
+   i2c_SDA_H();
+   cWAIT_5_us;
+   i2c_SDA_L();
+   cWAIT_5_us;
+   i2c_SCL_L();
+   return 0;
+}
+
+//nodebug
+
+char index3;
+
+int i2c_write_char(char d)
+{
+	// Writes char and returns -1 if no ACK was sent from remote
+	auto char i;
+
+   index3=d;
+	for (i=0;i<8;i++)
+	{
+     // printf("Index3 %d\n",d);
+		if (d & 0x80)
+		{
+			i2c_SDA_H();
+		}
+		else
+		{
+			i2c_SDA_L();
+		}
+		cWAIT_5_us;
+		if (i2c_wSCL_H()) return -1;
+		i2c_SCL_L();
+		cWAIT_5_us;
+		d = d << 1;
+	}
+  	return i2c_check_ack();
+  // return 0;
+}
+
+//nodebug
+int i2c_wr_wait(char d)
+{
+	auto unsigned int cnt;
+	cnt=0;
+	while (i2c_write_char(d) && cnt<i2cRetries)
+	{
+		cWAIT_5_us;
+		i2c_stop_tx();        // Not ready yet !
+		cWAIT_5_us;
+		if (i2c_startw_tx()) return -1; // Return 1 if clock stretch too long
+ 		cnt++;
+  	}
+   if (cnt>=i2cRetries)
+   {
+   	return -1; // number of retries exceeded
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+//nodebug
+void i2c_stop_tx() {
+	i2c_SDA_L();
+	cWAIT_5_us;
+	i2c_SCL_H();
+	cWAIT_5_us;
+	i2c_SDA_H();
+}
+
+//nodebug
+int i2c_startw_tx()
+{
+	auto unsigned int delcnt;
+	if (i2c_wSCL_H()) return -1; // Check if clock stretching too long
+   i2c_SDA_H();
+   cWAIT_5_us;
+   i2c_SDA_L();
+   cWAIT_5_us;
+   i2c_SCL_L();
+   cWAIT_5_us;
+   return 0;
+}
+
+//nodebug
+int i2c_wSCL_H()
+{
+	// Sets SCL high and waits for clock stretching. Returns -1 if stretch
+	//too long
+	auto int delcnt;
+   i2c_SCL_H();
+   cWAIT_5_us;
+  	delcnt=0;
+	while(i2c_SCL()==0 && delcnt<i2cClockStretchDelay)
+	{
+		cWAIT_5_us;
+		delcnt++;
+	}
+	if (i2c_SCL()==0) return -1; // too long clock stretching
+	return 0;
+}
+
+//nodebug
+int i2c_send_ack()
+{
+	i2c_SDA_L();
+	cWAIT_5_us;
+	if (i2c_wSCL_H()) return -1; // Check if clock stretching too long
+	cWAIT_5_us;
+	i2c_SCL_L();
+	cWAIT_5_us;
+	i2c_SDA_H();
+	return 0;
+}
+
+//nodebug
+int i2c_check_ack()
+{
+	auto int delcnt;
+	i2c_SDA_H();
+	cWAIT_5_us;
+	if (i2c_wSCL_H()) return -1; // Check if clock stretching too long
+	if (i2c_SDA())
+	{
+		i2c_SCL_L();
+		return 1;
+	}
+	i2c_SCL_L();
+	return 0;
+}
+
+//nodebug
+void XL24C08_put(unsigned int index, char content)
+{
+   auto unsigned char res;
+   //Send control word + page NUM
+   res=(((unsigned char)(index>>7))&0x0E)|0xA0;
+   I2CWrite_mv(res,index&0x00FF,&content,1);
+}
+
+//nodebug
+void WriteEEPROM(unsigned int index,
+                 unsigned char *data,
+                 unsigned int length)
+{
+   auto unsigned i;
+   for (i=0;i<length;i++)
+   {
+      XL24C08_put(index,*data);
+      index++;
+      data++;
+   }
+}
+
+
+//nodebug
+ void i2c_init()
+{
+   // Set the bits to tristate and the output to 0. Toggle using
+   //tristate reg.
+	// This function affects the port D transfer transfer clock
+	// Transfer clock on port D is PCLK/2
+	WrPortI(PECR,&PECRShadow,0);
+	BitWrPortI(PEFR ,&PEFRShadow ,0,I2CSCLBit);
+	// Set the bits to normal function
+	BitWrPortI(PEFR ,&PEFRShadow ,0,I2CSDABit);
+	BitWrPortI(PEDDR,&PEDDRShadow,1,I2CSCLBit);
+	// Set the bits to input (=0)
+	BitWrPortI(PEDDR,&PEDDRShadow,1,I2CSDABit);
+	BitWrPortI(PEDCR,&PEDCRShadow,1,I2CSCLBit);
+	// Set the bits to Open Drain
+	BitWrPortI(PEDCR,&PEDCRShadow,1,I2CSDABit);
+	BitWrPortI(PEDR ,&PEDRShadow ,0,I2CSCLBit);
+	// Set the outputs to 0, when outputs
+	BitWrPortI(PEDR ,&PEDRShadow ,0,I2CSDABit);
+	i2c_clocks_per_us = (int)(19200L*32*freq_divider/1000000L);
+	if(i2c_clocks_per_us < 3)
+	{
+		i2c_clocks_per_us = 3;
+	}
+}
+
+
+/*------------------------Read------------------------------------------*/
+
+    unsigned char len2;
+
+//nodebug
+//nodebug
+int I2CRead(unsigned char slave,
+					     unsigned char index,
+			   	 	  char *buf,
+			   		  unsigned char len)
+{
+	auto unsigned char cnt;
+	auto short int err;
+
+	if (err=i2c_startw_tx())
+	{
+		i2c_stop_tx();
+		return -10+err; // Return too long stretching
+	}
+	if (err=i2c_wr_wait(slave))
+	{
+		i2c_stop_tx();
+		return -20+err; // Return no ack on slave
+	}
+	if (err=i2c_write_char(index))
+	{
+		i2c_stop_tx();
+		return -30+err; // Return no ack on index
+	}
+	//i2c_Delay(10);
+	if (err=i2c_startw_tx())
+	{
+		i2c_stop_tx();
+		return -40+err; // Return too long stretch on read
+	}
+  	if (err=i2c_wr_wait(slave+1))
+	{
+		i2c_stop_tx();
+		return -50+err; // Send read to slave - no ack (retried) return -5
+	}
+  for (cnt=0;cnt<len;cnt++)
+	{
+		err=i2c_read_char(&buf[cnt]);
+		if (err)
+		{
+			i2c_stop_tx();
+			return -60+err;
+		}
+		if (cnt==(len-1))
+		{
+			i2c_send_nak();
+		}
+		else
+      {
+			i2c_send_ack();
+		}
+	}
+	i2c_stop_tx();
+	return 0;
+}
+
+
+//nodebug
+ unsigned char XL24C08_get(unsigned int index)
+{
+   auto unsigned char res;
+   //Send control word + page NUM
+   res=(((unsigned char)(index>>7))&0x0E)|0xA0;
+   I2CRead(res,index&0x00FF,&res,1);
+   return res;
+}
+
+//nodebug
+
+unsigned char index2;
+void ReadEEPROM(unsigned char * data,
+                        unsigned int index,
+                        unsigned int length)
+{
+   auto unsigned char i;
+
+   index2=index;
+
+   for (i=0;i<length;i++)
+   {
+      *data=XL24C08_get(index);
+      index++;
+      data++;
+      index1=index;
+}
+}
+
+//nodebug
+int i2c_send_nak()
+{
+	i2c_SDA_H();
+	cWAIT_5_us;
+	if (i2c_wSCL_H()) return -1; // Check if clock stretching too long
+	cWAIT_5_us;
+	i2c_SCL_L();
+	cWAIT_5_us;
+	i2c_SDA_H();
+	return 0;
+}
+      char res1;
+//nodebug
+
+ int i2c_read_char(char *ch)
+{
+	auto char res,cnt;
+
+   //cnt1=*ch;
+	for ( cnt=0,res=0;cnt<8;cnt++ )
+	{
+		i2c_SDA_H();
+		cWAIT_5_us;
+		if (i2c_wSCL_H()) return -1; // too long clock stretching
+		res<<=1;
+		if (i2c_SDA()) res|=0x01;
+		i2c_SCL_L();
+		cWAIT_5_us;
+      res1=res;
+	}
+	*ch=res;
+   //printf("ch %d\n", *ch);
+   //cnt1=res;
+    return 0;
+}

@@ -1,3 +1,9 @@
+/*********Client.c****************/
+/*Authors: Sanket Agarwal and Dhiraj Kudva
+Organization: Texas A&M University
+Description: client code .*/
+
+//including the library files. these are standard library files. 
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
